@@ -1,11 +1,8 @@
 ---
-assignees:
+approvers:
 - erictune
 - thockin
 title: Images
-redirect_from:
-- "/docs/user-guide/images/"
-- "/docs/user-guide/images.html"
 ---
 
 {% capture overview %}
@@ -22,10 +19,13 @@ The `image` property of a container supports the same syntax as the `docker` com
 
 ## Updating Images
 
-The default pull policy is `IfNotPresent` which causes the Kubelet to not
-pull an image if it already exists. If you would like to always force a pull
-you must set a pull image policy of `Always` or specify a `:latest` tag on
-your image.
+The default pull policy is `IfNotPresent` which causes the Kubelet to skip
+pulling an image if it already exists. If you would like to always force a pull,
+you can do one of the following:
+
+- set the `imagePullPolicy` of the container to `Always`;
+- use `:latest` as the tag for the image to use;
+- enable the [AlwaysPullImages](/docs/admin/admission-controllers/#alwayspullimages) admission controller.
 
 If you did not specify tag of your image, it will be assumed as `:latest`, with
 pull image policy of `Always` correspondingly.
@@ -39,7 +39,7 @@ Credentials can be provided in several ways:
 
   - Using Google Container Registry
     - Per-cluster
-    - automatically configured on Google Compute Engine or Google Container Engine
+    - automatically configured on Google Compute Engine or Google Kubernetes Engine
     - all pods can read the project's private registry
   - Using AWS EC2 Container Registry (ECR)
     - use IAM roles and policies to control access to ECR repositories
@@ -60,7 +60,7 @@ Each option is described in more detail below.
 
 Kubernetes has native support for the [Google Container
 Registry (GCR)](https://cloud.google.com/tools/container-registry/), when running on Google Compute
-Engine (GCE).  If you are running your cluster on GCE or Google Container Engine (GKE), simply
+Engine (GCE).  If you are running your cluster on GCE or Google Kubernetes Engine, simply
 use the full image name (e.g. gcr.io/my_project/image:tag).
 
 All pods in a cluster will have read access to images in this registry.
@@ -83,7 +83,7 @@ images in the ECR registry.
 
 The kubelet will fetch and periodically refresh ECR credentials.  It needs the following permissions to do this:
 
-- `ecr:GetAuthorizationToken` 
+- `ecr:GetAuthorizationToken`
 - `ecr:BatchCheckLayerAvailability`
 - `ecr:GetDownloadUrlForLayer`
 - `ecr:GetRepositoryPolicy`
@@ -102,7 +102,7 @@ Troubleshooting:
 - Verify all requirements above.
 - Get $REGION (e.g. `us-west-2`) credentials on your workstation. SSH into the host and run Docker manually with those creds. Does it work?
 - Verify kubelet is running with `--cloud-provider=aws`.
-- Check kubelet logs (e.g. `journalctl -t kubelet`) for log lines like:
+- Check kubelet logs (e.g. `journalctl -u kubelet`) for log lines like:
   - `plugins.go:56] Registering credential provider: aws-ecr-key`
   - `provider.go:91] Refreshing cache for provider: *aws_credentials.ecrProvider`
 
@@ -116,6 +116,7 @@ You first need to create a registry and generate credentials, complete documenta
 the [Azure container registry documentation](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli).
 
 Once you have created your container registry, you will use the following credentials to login:
+
    * `DOCKER_USER` : service principal, or admin username
    * `DOCKER_PASSWORD`: service principal password, or admin user password
    * `DOCKER_REGISTRY_SERVER`: `${some-registry-name}.azurecr.io`
@@ -127,8 +128,7 @@ Once you have those variables filled in you can
 
 ### Configuring Nodes to Authenticate to a Private Repository
 
-**Note:** if you are running on Google Container Engine (GKE), there will already be a `.dockercfg` on each node
-with credentials for Google Container Registry.  You cannot use this approach.
+**Note:** if you are running on Google Kubernetes Engine, there will already be a `.dockercfg` on each node with credentials for Google Container Registry.  You cannot use this approach.
 
 **Note:** if you are running on AWS EC2 and are using the EC2 Container Registry (ECR), the kubelet on each node will
 manage and update the ECR login credentials. You cannot use this approach.
@@ -198,14 +198,13 @@ It should also work for a private registry such as quay.io, but that has not bee
 
 ### Pre-pulling Images
 
-**Note:** if you are running on Google Container Engine (GKE), there will already be a `.dockercfg` on each node
-with credentials for Google Container Registry.  You cannot use this approach.
+**Note:** if you are running on Google Kubernetes Engine, there will already be a `.dockercfg` on each node with credentials for Google Container Registry.  You cannot use this approach.
 
 **Note:** this approach is suitable if you can control node configuration.  It
 will not work reliably on GCE, and any other cloud provider that does automatic
 node replacement.
 
-Be default, the kubelet will try to pull each image from the specified registry.
+By default, the kubelet will try to pull each image from the specified registry.
 However, if the `imagePullPolicy` property of the container is set to `IfNotPresent` or `Never`,
 then a local image is used (preferentially or exclusively, respectively).
 
@@ -218,7 +217,7 @@ All pods will have read access to any pre-pulled images.
 
 ### Specifying ImagePullSecrets on a Pod
 
-**Note:** This approach is currently the recommended approach for GKE, GCE, and any cloud-providers
+**Note:** This approach is currently the recommended approach for Google Kubernetes Engine, GCE, and any cloud-providers
 where node creation is automated.
 
 Kubernetes supports specifying registry keys on a pod.
@@ -266,7 +265,7 @@ type: kubernetes.io/dockerconfigjson
 ```
 
 If you get the error message `error: no objects passed to create`, it may mean the base64 encoded string is invalid.
-If you get an error message like `Secret "myregistrykey" is invalid: data[.dockerconfigjson]: invalid value ...` it means
+If you get an error message like `Secret "myregistrykey" is invalid: data[.dockerconfigjson]: invalid value ...`, it means
 the data was successfully un-base64 encoded, but could not be parsed as a `.docker/config.json` file.
 
 #### Referring to an imagePullSecrets on a Pod
@@ -292,9 +291,10 @@ This needs to be done for each pod that is using a private registry.
 
 However, setting of this field can be automated by setting the imagePullSecrets
 in a [serviceAccount](/docs/user-guide/service-accounts) resource.
+Check [Add ImagePullSecrets to a Service Account](/docs/tasks/configure-pod-container/configure-service-account/#add-imagepullsecrets-to-a-service-account) for detailed instructions.
 
 You can use this in conjunction with a per-node `.docker/config.json`.  The credentials
-will be merged.  This approach will work on Google Container Engine (GKE).
+will be merged.  This approach will work on Google Kubernetes Engine.
 
 ### Use Cases
 
@@ -303,26 +303,26 @@ common use cases and suggested solutions.
 
 1. Cluster running only non-proprietary (e.g. open-source) images.  No need to hide images.
    - Use public images on the Docker hub.
-     - no configuration required
-     - on GCE/GKE, a local mirror is automatically used for improved speed and availability
+     - No configuration required.
+     - On GCE/Google Kubernetes Engine, a local mirror is automatically used for improved speed and availability.
 1. Cluster running some proprietary images which should be hidden to those outside the company, but
    visible to all cluster users.
-   - Use a hosted private [Docker registry](https://docs.docker.com/registry/)
-     - may be hosted on the [Docker Hub](https://hub.docker.com/account/signup/), or elsewhere.
-     - manually configure .docker/config.json on each node as described above
+   - Use a hosted private [Docker registry](https://docs.docker.com/registry/).
+     - It may be hosted on the [Docker Hub](https://hub.docker.com/account/signup/), or elsewhere.
+     - Manually configure .docker/config.json on each node as described above.
    - Or, run an internal private registry behind your firewall with open read access.
-     - no Kubernetes configuration required
-   - Or, when on GCE/GKE, use the project's Google Container Registry.
-     - will work better with cluster autoscaling than manual node configuration
+     - No Kubernetes configuration is required.
+   - Or, when on GCE/Google Kubernetes Engine, use the project's Google Container Registry.
+     - It will work better with cluster autoscaling than manual node configuration.
    - Or, on a cluster where changing the node configuration is inconvenient, use `imagePullSecrets`.
-1. Cluster with a proprietary images, a few of which require stricter access control
-   - ensure [AlwaysPullImages admission controller](/docs/admin/admission-controllers/#alwayspullimages) is active, otherwise, all Pods potentially have access to all images
+1. Cluster with a proprietary images, a few of which require stricter access control.
+   - Ensure [AlwaysPullImages admission controller](/docs/admin/admission-controllers/#alwayspullimages) is active. Otherwise, all Pods potentially have access to all images.
    - Move sensitive data into a "Secret" resource, instead of packaging it in an image.
-1. A multi-tenant cluster where each tenant needs own private registry
-   - ensure [AlwaysPullImages admission controller](/docs/admin/admission-controllers/#alwayspullimages) is active, otherwise, all Pods of all tenants potentially have access to all images
-   - run a private registry with authorization required.
-   - generate registry credential for each tenant, put into secret, and populate secret to each tenant namespace.
-   - tenant adds that secret to imagePullSecrets of each namespace.
+1. A multi-tenant cluster where each tenant needs own private registry.
+   - Ensure [AlwaysPullImages admission controller](/docs/admin/admission-controllers/#alwayspullimages) is active. Otherwise, all Pods of all tenants potentially have access to all images.
+   - Run a private registry with authorization required.
+   - Generate registry credential for each tenant, put into secret, and populate secret to each tenant namespace.
+   - The tenant adds that secret to imagePullSecrets of each namespace.
 
 {% endcapture %}
 

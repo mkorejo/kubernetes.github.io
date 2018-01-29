@@ -1,8 +1,9 @@
 ---
-assignees:
+approvers:
 - brendandburns
 - erictune
 - mikedanese
+no_issue: true
 title: Setup
 ---
 

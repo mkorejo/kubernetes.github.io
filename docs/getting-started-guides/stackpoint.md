@@ -1,5 +1,5 @@
 ---
-assignees:
+approvers:
 - baldwinspc
 title: Running Kubernetes on Multiple Clouds with Stackpoint.io
 ---
@@ -38,7 +38,7 @@ Choose any extra options you may want to include with your cluster, then click *
 
 You can monitor the status of your cluster and suspend or delete it from [your stackpoint.io dashboard](https://stackpoint.io/#/clusters).
 
-For information on using and managing a Kubernetes cluster on AWS, [consult the  Kubernetes documentation](http://kubernetes.io/docs/getting-started-guides/aws/).
+For information on using and managing a Kubernetes cluster on AWS, [consult the  Kubernetes documentation](/docs/getting-started-guides/aws/).
 
 
 
@@ -70,15 +70,15 @@ Choose any extra options you may want to include with your cluster, then click *
 
 You can monitor the status of your cluster and suspend or delete it from [your stackpoint.io dashboard](https://stackpoint.io/#/clusters).
 
-For information on using and managing a Kubernetes cluster on GCE, [consult the  Kubernetes documentation](http://kubernetes.io/docs/getting-started-guides/gce).
+For information on using and managing a Kubernetes cluster on GCE, [consult the  Kubernetes documentation](/docs/getting-started-guides/gce/).
 
 
 
 
 
-## GKE
+## Google Kubernetes Engine
 
-To create a Kubernetes cluster on GKE, you will need the Service Account JSON Data from Google.
+To create a Kubernetes cluster on Google Kubernetes Engine, you will need the Service Account JSON Data from Google.
 
 ### Choose a Provider
 
@@ -86,7 +86,7 @@ Log in to [stackpoint.io](https://stackpoint.io) with a GitHub, Google, or Twitt
 
 Click **+ADD A CLUSTER NOW**.
 
-Click to select Google Container Engine (GKE).
+Click to select Google Kubernetes Engine.
 
 ### Configure Your Provider
 
@@ -103,10 +103,7 @@ Choose any extra options you may want to include with your cluster, then click *
 
 You can monitor the status of your cluster and suspend or delete it from [your stackpoint.io dashboard](https://stackpoint.io/#/clusters).
 
-For information on using and managing a Kubernetes cluster on GKE, consult [the official documentation](http://kubernetes.io/docs/).
-
-
-
+For information on using and managing a Kubernetes cluster on Google Kubernetes Engine, consult [the official documentation](/docs/home/).
 
 
 ## DigitalOcean
@@ -135,7 +132,7 @@ Choose any extra options you may want to include with your cluster, then click *
 
 You can monitor the status of your cluster and suspend or delete it from [your stackpoint.io dashboard](https://stackpoint.io/#/clusters).
 
-For information on using and managing a Kubernetes cluster on DigitalOcean, consult [the official documentation](http://kubernetes.io/docs/).
+For information on using and managing a Kubernetes cluster on DigitalOcean, consult [the official documentation](/docs/home/).
 
 
 
@@ -168,7 +165,7 @@ Choose any extra options you may want to include with your cluster, then click *
 
 You can monitor the status of your cluster and suspend or delete it from [your stackpoint.io dashboard](https://stackpoint.io/#/clusters).
 
-For information on using and managing a Kubernetes cluster on Azure, [consult the  Kubernetes documentation](http://kubernetes.io/docs/getting-started-guides/azure/).
+For information on using and managing a Kubernetes cluster on Azure, [consult the  Kubernetes documentation](/docs/getting-started-guides/azure/).
 
 
 
@@ -200,4 +197,4 @@ Choose any extra options you may want to include with your cluster, then click *
 
 You can monitor the status of your cluster and suspend or delete it from [your stackpoint.io dashboard](https://stackpoint.io/#/clusters).
 
-For information on using and managing a Kubernetes cluster on Packet, consult [the official documentation](http://kubernetes.io/docs/).
+For information on using and managing a Kubernetes cluster on Packet, consult [the official documentation](/docs/home/).

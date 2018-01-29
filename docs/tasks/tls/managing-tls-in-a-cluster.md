@@ -1,6 +1,6 @@
 ---
-title: Managing TLS Certificates in a Cluster
-assignees:
+title: Manage TLS Certificates in a Cluster
+approvers:
 - mikedanese
 - beacham
 - liggit
@@ -40,6 +40,9 @@ build a configmap containing the certificate bundle that you have access to use.
 The following section demonstrates how to create a TLS certificate for a
 Kubernetes service accessed through DNS.
 
+**Note:** This tutorial uses CFSSL: Cloudflare's PKI and TLS toolkit [click here](https://blog.cloudflare.com/introducing-cfssl/) to know more.
+{: .note}
+
 ### Step 0. Download and install CFSSL
 
 The cfssl tools used in this example can be downloaded at
@@ -71,7 +74,7 @@ EOF
 Where `172.168.0.24` is the service's cluster IP,
 `my-svc.my-namespace.svc.cluster.local` is the service's DNS name,
 `10.0.34.2` is the pod's IP and `my-pod.my-namespace.pod.cluster.local`
-is the pod's DNS name. you should see the following output:
+is the pod's DNS name. You should see the following output:
 
 ```
 2017/03/21 06:48:17 [INFO] generate received request
@@ -111,7 +114,7 @@ Notice that the `server.csr` file created in step 1 is base64 encoded
 and stashed in the `.spec.request` field. We are also requesting a
 certificate with the "digital signature", "key encipherment", and "server
 auth" key usages. We support all key usages and extended key usages listed
-[here](https://godoc.org/k8s.io/client-go/pkg/apis/certificates/v1beta1#KeyUsage)
+[here](https://godoc.org/k8s.io/api/certificates/v1beta1#KeyUsage)
 so you can request client certificates and other certificates using this
 same API.
 
@@ -191,7 +194,7 @@ the CSR and otherwise should deny the CSR.
 The ability to approve CSRs decides who trusts who within the cluster. This
 includes who the Kubernetes API trusts. The ability to approve CSRs should
 not be granted broadly or lightly. The requirements of the challenge
-noted in the previous section and the reprecussions of issuing a specific
+noted in the previous section and the repercussions of issuing a specific
 certificate should be fully understood before granting this permission. See
 [here](/docs/admin/authentication#x509-client-certs) for information on how
 certificates interact with authentication.

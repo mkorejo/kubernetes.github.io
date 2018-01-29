@@ -1,14 +1,9 @@
 ---
-assignees:
+approvers:
 - erictune
 - soltysh
 - janetkuo
-title: Cron Jobs
-redirect_from:
-- "/docs/concepts/jobs/cron-jobs/"
-- "/docs/concepts/jobs/cron-jobs.html"
-- "/docs/user-guide/cron-jobs/"
-- "/docs/user-guide/cron-jobs.html"
+title: CronJob
 ---
 
 * TOC
@@ -16,7 +11,7 @@ redirect_from:
 
 ## What is a cron job?
 
-A _Cron Job_ manages time based [Jobs](/docs/concepts/jobs/run-to-completion-finite-workloads/), namely:
+A _Cron Job_ manages time based [Jobs](/docs/concepts/workloads/controllers/jobs-run-to-completion/), namely:
 
 * Once at a specified point in time
 * Repeatedly at a specified point in time
@@ -27,8 +22,10 @@ on a given schedule, written in [Cron](https://en.wikipedia.org/wiki/Cron) forma
 **Note:** The question mark (`?`) in the schedule has the same meaning as an asterisk `*`,
 that is, it stands for any of available value for a given field.
 
-**Note:** ScheduledJob resource was introduced in Kubernetes version 1.4, but starting
-from version 1.5 its current name is CronJob.
+**Note:** CronJob resource in `batch/v2alpha1` API group has been deprecated starting
+from cluster version 1.8. You should switch to using `batch/v1beta1`, instead, which is
+enabled by default in the API server.  Further in this document, we will be using
+`batch/v1beta1` in all the examples.
 
 A typical use case is:
 
@@ -37,10 +34,11 @@ A typical use case is:
 
 ### Prerequisites
 
-You need a working Kubernetes cluster at version >= 1.4 (for ScheduledJob), >= 1.5 (for CronJob),
-with batch/v2alpha1 API turned on by passing `--runtime-config=batch/v2alpha1=true` while bringing up
+You need a working Kubernetes cluster at version >= 1.8 (for CronJob). For previous versions of cluster (< 1.8)
+you need to explicitly enable `batch/v2alpha1` API by passing `--runtime-config=batch/v2alpha1=true` to
 the API server (see [Turn on or off an API version for your cluster](/docs/admin/cluster-management/#turn-on-or-off-an-api-version-for-your-cluster)
-for more). You cannot use Cron Jobs on a hosted Kubernetes provider that has disabled alpha resources.
+for more), and then restart both the API server and the controller manager
+component.
 
 ## Creating a Cron Job
 
@@ -97,7 +95,7 @@ your job name and pod name would be different.
 
 ```shell
 # Replace "hello-4111706356" with the job name in your system
-$ pods=$(kubectl get pods --selector=job-name=hello-4111706356 --output=jsonpath={.items..metadata.name})
+$ pods=$(kubectl get pods -a --selector=job-name=hello-4111706356 --output=jsonpath={.items..metadata.name})
 
 $ echo $pods
 hello-4111706356-o9qcm
@@ -116,25 +114,8 @@ $ kubectl delete cronjob hello
 cronjob "hello" deleted
 ```
 
-This stops new jobs from being created. However, running jobs won't be stopped, and no jobs or their pods will
-be deleted. To clean up those jobs and pods, you need to list all jobs created by the cron job, and delete them all:
-
-```shell
-$ kubectl get jobs
-NAME               DESIRED   SUCCESSFUL   AGE
-hello-1201907962   1         1            11m
-hello-1202039034   1         1            8m
-...
-
-$ kubectl delete jobs hello-1201907962 hello-1202039034 ...
-job "hello-1201907962" deleted
-job "hello-1202039034" deleted
-...
-```
-
-Once the jobs are deleted, the pods created by them are deleted as well. Note that all jobs created by cron
-job "hello" will be prefixed "hello-". You can delete them at once with `kubectl delete jobs --all`, if you want to
-delete all jobs in the current namespace (not just the ones created by "hello".)
+This stops new jobs from being created and removes all the jobs and pods created by this cronjob.
+You can read more about it in [garbage collection section](/docs/concepts/workloads/controllers/garbage-collection/).
 
 ## Cron Job Limitations
 
@@ -142,17 +123,30 @@ A cron job creates a job object _about_ once per execution time of its schedule.
 are certain circumstances where two jobs might be created, or no job might be created. We attempt to make these rare,
 but do not completely prevent them. Therefore, jobs should be _idempotent_.
 
-The job is responsible for retrying pods, parallelism among pods it creates, and determining the success or failure
-of the set of pods. A cron job does not examine pods at all.
+If `startingDeadlineSeconds` is set to a large value or left unset (the default)
+and if `concurrentPolicy` is set to `AllowConcurrent`, the jobs will always run
+at least once.
+
+Jobs may fail to run if the CronJob controller is not running or broken for a
+span of time from before the start time of the CronJob to start time plus
+`startingDeadlineSeconds`, or if the span covers multiple start times and
+`concurrencyPolicy` does not allow concurrency.
+For example, suppose a cron job is set to start at exactly `08:30:00` and its 
+`startingDeadlineSeconds` is set to 10, if the CronJob controller happens to
+be down from `08:29:00` to `08:42:00`, the job will not start.
+Set a longer `startingDeadlineSeconds` if starting later is better than not
+starting at all.
+
+The Cronjob is only responsible for creating Jobs that match its schedule, and
+the Job in turn is responsible for the management of the Pods it represents.
 
 ## Writing a Cron Job Spec
 
 As with all other Kubernetes configs, a cron job needs `apiVersion`, `kind`, and `metadata` fields. For general
 information about working with config files, see [deploying applications](/docs/user-guide/deploying-applications),
-[configuring containers](/docs/user-guide/configuring-containers), and
-[using kubectl to manage resources](/docs/user-guide/working-with-resources) documents.
+and [using kubectl to manage resources](/docs/user-guide/working-with-resources) documents.
 
-A cron job also needs a [`.spec` section](https://github.com/kubernetes/kubernetes/tree/{{page.githubbranch}}/docs/devel/api-conventions.md#spec-and-status).
+A cron job also needs a [`.spec` section](https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status).
 
 **Note:** All modifications to a cron job, especially its `.spec`, will be applied only to the next run.
 
@@ -164,8 +158,8 @@ string, e.g. `0 * * * *` or `@hourly`, as schedule time of its jobs to be create
 ### Job Template
 
 The `.spec.jobTemplate` is another required field of the `.spec`. It is a job template. It has exactly the same schema
-as a [Job](/docs/concepts/jobs/run-to-completion-finite-workloads/), except it is nested and does not have an `apiVersion` or `kind`, see
-[Writing a Job Spec](/docs/concepts/jobs/run-to-completion-finite-workloads/#writing-a-job-spec).
+as a [Job](/docs/concepts/workloads/controllers/jobs-run-to-completion/), except it is nested and does not have an `apiVersion` or `kind`, see
+[Writing a Job Spec](/docs/concepts/workloads/controllers/jobs-run-to-completion/#writing-a-job-spec).
 
 ### Starting Deadline Seconds
 
@@ -192,6 +186,7 @@ apply to already started executions. Defaults to false.
 
 ### Jobs History Limits
 
-The `.spec.successfulJobsHistoryLimit` and `.spec.failedJobsHistoryLimit` fields are optional. These fields specify how many completed and failed jobs should be kept.
-
-By default, there are no limits, and all successful and failed jobs are kept. However, jobs can pile up quickly when running a cron job, and setting these fields is recommended. Setting a limit to `0` corresponds to keeping none of the corresponding kind of jobs after they finish.
+The `.spec.successfulJobsHistoryLimit` and `.spec.failedJobsHistoryLimit` fields are optional.
+These fields specify how many completed and failed jobs should be kept.  By default, they are
+set to 3 and 1 respectively.  Setting a limit to `0` corresponds to keeping none of the corresponding
+kind of jobs after they finish.

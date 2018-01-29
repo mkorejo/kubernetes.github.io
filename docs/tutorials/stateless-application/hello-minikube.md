@@ -1,9 +1,5 @@
 ---
-
 title: Hello Minikube
-redirect_from:
-- "/docs/hellonode/"
-- "/docs/hellonode.html"
 ---
 
 {% capture overview %}
@@ -77,10 +73,10 @@ brew install kubectl
 Determine whether you can access sites like [https://cloud.google.com/container-registry/](https://cloud.google.com/container-registry/) directly without a proxy, by opening a new terminal and using
 
 ```shell
-curl --proxy "" https://cloud.google.com/container-registry/ 
+curl --proxy "" https://cloud.google.com/container-registry/
 ```
 
-If NO proxy is required, start the Minikube cluster: 
+If NO proxy is required, start the Minikube cluster:
 
 ```shell
 minikube start --vm-driver=xhyve
@@ -93,6 +89,18 @@ minikube start --vm-driver=xhyve --docker-env HTTP_PROXY=http://your-http-proxy-
 
 The `--vm-driver=xhyve` flag specifies that you are using Docker for Mac. The
 default VM driver is VirtualBox.
+
+Note if `minikube start --vm-driver=xhyve` is unsuccessful due to the error:
+```
+Error creating machine: Error in driver during machine creation: Could not convert the UUID to MAC address: exit status 1
+```
+
+Then the following may resolve the `minikube start --vm-driver=xhyve` issue:
+```
+rm -rf ~/.minikube
+sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+```
 
 Now set the Minikube context. The context is what determines which cluster
 `kubectl` is interacting with. You can see all your available contexts in the
@@ -137,7 +145,7 @@ existing image. The image in this tutorial extends an existing Node.js image.
 
 This recipe for the Docker image starts from the official Node.js LTS image
 found in the Docker registry, exposes port 8080, copies your `server.js` file
-to the image and start the Node.js server.
+to the image and starts the Node.js server.
 
 Because this tutorial uses Minikube, instead of pushing your Docker image to a
 registry, you can simply build the image using the same Docker host as
@@ -164,7 +172,7 @@ Now the Minikube VM can run the image you built.
 A Kubernetes [*Pod*](/docs/concepts/workloads/pods/pod/) is a group of one or more Containers,
 tied together for the purposes of administration and networking. The Pod in this
 tutorial has only one Container. A Kubernetes
-[*Deployment*](/docs/user-guide/deployments) checks on the health of your
+[*Deployment*](/docs/concepts/workloads/controllers/deployment/) checks on the health of your
 Pod and restarts the Pod's Container if it terminates. Deployments are the
 recommended way to manage the creation and scaling of Pods.
 
@@ -295,6 +303,75 @@ Run your app again to view the new message:
 minikube service hello-node
 ```
 
+## Enable addons
+
+Minikube has a set of built-in addons that can be enabled, disabled and opened in the local Kubernetes environment.
+
+First list the currently supported addons:
+
+```shell
+minikube addons list
+```
+
+Output:
+
+```shell
+- storage-provisioner: enabled
+- kube-dns: enabled
+- registry: disabled
+- registry-creds: disabled
+- addon-manager: enabled
+- dashboard: disabled
+- default-storageclass: enabled
+- coredns: disabled
+- heapster: disabled
+- efk: disabled
+- ingress: disabled
+```
+
+Minikube must be running for these command to take effect. To enable `heapster` addon, for example:
+
+```shell
+minikube addons enable heapster
+```
+
+Output:
+
+```shell
+heapster was successfully enabled
+```
+
+View the Pod and Service you just created:
+
+```shell
+kubectl get po,svc -n kube-system
+```
+
+Output:
+
+```shell
+NAME                             READY     STATUS    RESTARTS   AGE
+po/heapster-zbwzv                1/1       Running   0          2m
+po/influxdb-grafana-gtht9        2/2       Running   0          2m
+
+NAME                       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)             AGE
+svc/heapster               NodePort    10.0.0.52    <none>        80:31655/TCP        2m
+svc/monitoring-grafana     NodePort    10.0.0.33    <none>        80:30002/TCP        2m
+svc/monitoring-influxdb    ClusterIP   10.0.0.43    <none>        8083/TCP,8086/TCP   2m
+```
+
+Open the endpoint to interacting with heapster in a browser:
+
+```shell
+minikube addons open heapster
+```
+
+Output:
+
+```shell
+Opening kubernetes service kube-system/monitoring-grafana in default browser...
+```
+
 ## Clean up
 
 Now you can clean up the resources you created in your cluster:
@@ -304,10 +381,17 @@ kubectl delete service hello-node
 kubectl delete deployment hello-node
 ```
 
-Optionally, stop Minikube:
+Optionally, stop the Minikube VM:
 
 ```shell
 minikube stop
+eval $(minikube docker-env -u)
+```
+
+Optionally, delete the Minikube VM:
+
+```shell
+minikube delete
 ```
 
 {% endcapture %}

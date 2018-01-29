@@ -1,7 +1,7 @@
 ---
-assignees:
+approvers:
 - janetkuo
-title: Performing a Rolling Update on a DaemonSet
+title: Perform a Rolling Update on a DaemonSet
 ---
 
 {% capture overview %}
@@ -22,7 +22,7 @@ This page shows how to perform a rolling update on a DaemonSet.
 
 ## DaemonSet Update Strategy
 
-DaemonSet has two update strategy types :
+DaemonSet has two update strategy types:
 
 * OnDelete: This is the default update strategy for backward-compatibility. With
   `OnDelete` update strategy, after you update a DaemonSet template, new
@@ -33,46 +33,18 @@ DaemonSet has two update strategy types :
   DaemonSet template, old DaemonSet pods will be killed, and new DaemonSet pods
   will be created automatically, in a controlled fashion. 
 
-## Limitations 
-
-* DaemonSet rollout history is not supported yet. 
-* DaemonSet rollback is not directly supported in `kubectl` yet. You can rollback
-  by updating DaemonSet template to match the previous version.
-
 ## Caveat: Updating DaemonSet created from Kubernetes version 1.5 or before 
 
-If you try to rolling update a DaemonSet that was created from Kubernetes
+If you try a rolling update on a DaemonSet that was created from Kubernetes
 version 1.5 or before, a rollout will be triggered when you *first* change the
-DaemonSet update strategy to `RollingUpdate`, even when DaemonSet template isn't
-modified. All existing DaemonSet pods will be restarted. 
+DaemonSet update strategy to `RollingUpdate`, no matter if DaemonSet template is
+modified or not. If the DaemonSet template is not changed, all existing DaemonSet
+pods will be restarted (deleted and created).
 
-To avoid this restart, first find the DaemonSet's current
-`.spec.templateGeneration`:
+Therefore, make sure you want to trigger a rollout before you first switch the
+strategy to `RollingUpdate`.
 
-```shell{% raw %}
-kubectl get ds/<daemonset-name> -o go-template='{{.spec.templateGeneration}}{{"\n"}}'
-{% endraw %}```
-
-The output should be a number *N*. If the output shows `<no value>`, N = 0. 
-
-Then, simply label the existing DaemonSet pods with `pod-template-generation=<N>`
-before changing DaemonSet `.spec.updateStrategy` to `RollingUpdate`:
-
-```shell
-# Replace N with DaemonSet `.spec.templateGeneration`
-# Only run this on pods created from current DaemonSet template
-kubectl label pods -l <daemonset-selector-key>=<daemonset-selector-value> pod-template-generation=<N>
-```
-
-This tells the DaemonSet that the labeled DaemonSet pods are created from current
-DaemonSet template. Therefore, you should only run this command to existing DaemonSet
-pods that are generated from current DaemonSet template. 
-
-Note that you only need to do this when you first change the update strategy of
-a DaemonSet created from Kubernetes version 1.5 or before to `RollingUpdate`,
-but don't want to update its template and start a new rollout yet. 
-
-## Setting DaemonSet update strategy for rolling update
+## Performing a Rolling Update
 
 To enable the rolling update feature of a DaemonSet, you must set its
 `.spec.updateStrategy.type` to `RollingUpdate`. 
@@ -84,18 +56,18 @@ to 1) and `.spec.minReadySeconds` (default to 0) as well.
 ### Step 1: Checking DaemonSet `RollingUpdate` update strategy
 
 First, check the update strategy of your DaemonSet, and make sure it's set to 
-RollingUpdate:
+`RollingUpdate`:
 
 ```shell{% raw %}
-kubectl get ds/<daemonset-name> -o go-template='{{.spec.updateStrategy.type}}{{"\n"}}'{% endraw %}
-```
+kubectl get ds/<daemonset-name> -o go-template='{{.spec.updateStrategy.type}}{{"\n"}}'
+``` {% endraw %}
 
 If you haven't created the DaemonSet in the system, check your DaemonSet
 manifest with the following command instead:
 
 ```shell{% raw %}
 kubectl create -f ds.yaml --dry-run -o go-template='{{.spec.updateStrategy.type}}{{"\n"}}'
-{% endraw %}```
+``` {% endraw %}
 
 The output from both commands should be:
 
@@ -132,7 +104,7 @@ update. This can be done with several different `kubectl` commands.
 #### Declarative commands
 
 If you update DaemonSets using
-[configuration files](/docs/tutorials/object-management-kubectl/declarative-object-management-configuration/),
+[configuration files](/docs/concepts/overview/object-management-kubectl/declarative-config/),
 use `kubectl apply`:
 
 ```shell
@@ -142,7 +114,7 @@ kubectl apply -f ds-v2.yaml
 #### Imperative commands
 
 If you update DaemonSets using
-[imperative commands](/docs/tutorials/object-management-kubectl/imperative-object-management-command/),
+[imperative commands](/docs/concepts/overview/object-management-kubectl/imperative-command/),
 use `kubectl edit` or `kubectl patch`:
 
 ```shell
@@ -173,7 +145,7 @@ kubectl rollout status ds/<daemonset-name>
 When the rollout is complete, the output is similar to this:
 
 ```shell
-daemon set "<daemonset-name>" successfully rolled out
+daemonset "<daemonset-name>" successfully rolled out
 ```
 
 ## Troubleshooting 
@@ -187,7 +159,7 @@ causes:
 
 The rollout is stuck because new DaemonSet pods can't be scheduled on at least one
 node. This is possible when the node is 
-[running out of resources](/docs/concepts/cluster-administration/out-of-resource/).
+[running out of resources](/docs/tasks/administer-cluster/out-of-resource/).
 
 When this happens, find the nodes that don't have the DaemonSet pods scheduled on
 by comparing the output of `kubectl get nodes` and the output of:
@@ -224,7 +196,9 @@ progress.
 
 {% capture whatsnext %}
 
-*TODO: Link to "Task: Creating a DaemonSet to adopt existing DaemonSet pods"*
+* See [Task: Performing a rollback on a
+  DaemonSet](/docs/tasks/manage-daemon/rollback-daemon-set/)
+* See [Concepts: Creating a DaemonSet to adopt existing DaemonSet pods](/docs/concepts/workloads/controllers/daemonset/)
 
 {% endcapture %}
 

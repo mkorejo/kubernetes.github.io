@@ -4,29 +4,43 @@ toc:
 - docs/setup/index.md
 - docs/setup/pick-right-solution.md
 
+- title: Downloading Kubernetes
+  landing_page: /docs/imported/release/notes/
+  section:
+  - docs/imported/release/notes.md
+  - docs/setup/building-from-source.md
+
 - title: Independent Solutions
   section:
   - docs/getting-started-guides/minikube.md
-  - docs/getting-started-guides/kubeadm.md
+
+  - title: Bootstrapping Clusters with kubeadm
+    section:
+    - docs/setup/independent/install-kubeadm.md
+    - docs/setup/independent/create-cluster-kubeadm.md
+    - docs/setup/independent/troubleshooting-kubeadm.md
+    - docs/setup/independent/high-availability.md
+
   - docs/getting-started-guides/scratch.md
   - docs/getting-started-guides/alternatives.md
 
 - title: Hosted Solutions
   section:
-  - title: Running Kubernetes on Google Container Engine
-    path: https://cloud.google.com/container-engine/docs/before-you-begin/
+  - title: Running Kubernetes on Google Kubernetes Engine
+    path: https://cloud.google.com/kubernetes-engine/docs/before-you-begin/
   - title: Running Kubernetes on Azure Container Service
     path: https://docs.microsoft.com/en-us/azure/container-service/container-service-kubernetes-walkthrough
-  - title: Running Kubernetes on IBM Bluemix Container Service (Beta)
-    path: https://console.ng.bluemix.net/docs/containers/container_index.html
+  - title: Running Kubernetes on IBM Cloud Container Service
+    path: https://console.bluemix.net/docs/containers/container_index.html
 
 - title: Turn-key Cloud Solutions
   section:
   - docs/getting-started-guides/gce.md
   - docs/getting-started-guides/aws.md
   - docs/getting-started-guides/azure.md
+  - docs/getting-started-guides/alibaba-cloud.md
   - docs/getting-started-guides/clc.md
-  - title: Running Kubernetes on IBM Bluemix
+  - title: Running Kubernetes on IBM Cloud
     path: https://github.com/patrocinio/kubernetes-softlayer
   - docs/getting-started-guides/stackpoint.md
 
@@ -37,9 +51,8 @@ toc:
     section:
     - docs/getting-started-guides/coreos/index.md
     - docs/getting-started-guides/ubuntu/index.md
-    - docs/getting-started-guides/rackspace.md
     - docs/getting-started-guides/kops.md
-    - docs/getting-started-guides/kargo.md
+    - docs/getting-started-guides/kubespray.md
     - docs/getting-started-guides/running-cloud-controller.md
 
   - title: On-Premise VMs
@@ -47,11 +60,8 @@ toc:
     - docs/getting-started-guides/coreos/index.md
     - docs/getting-started-guides/cloudstack.md
     - docs/getting-started-guides/vsphere.md
-    - docs/getting-started-guides/photon-controller.md
     - docs/getting-started-guides/dcos.md
-    - docs/getting-started-guides/libvirt-coreos.md
     - docs/getting-started-guides/ovirt.md
-    - docs/getting-started-guides/openstack-heat.md
 
     - title: rkt
       section:
@@ -89,14 +99,22 @@ toc:
         - docs/getting-started-guides/ubuntu/glossary.md
         - docs/getting-started-guides/ubuntu/local.md
         - docs/getting-started-guides/ubuntu/logging.md
-        - docs/getting-started-guides/ubuntu/manual.md
 
     - docs/getting-started-guides/windows/index.md
 
   - docs/admin/node-conformance.md
 
-- docs/admin/salt.md
-- docs/admin/cluster-large.md
-- docs/admin/multiple-zones.md
-- docs/admin/high-availability/index.md
-- docs/getting-started-guides/binary_release.md
+- title: Installing Addons
+  path: /docs/concepts/cluster-administration/addons/
+
+- title: Configuring Kubernetes with Salt
+  path: /docs/admin/salt/
+
+- title: Building Large Clusters
+  path: /docs/admin/cluster-large/
+
+- title: Running in Multiple Zones
+  path: /docs/admin/multiple-zones/
+
+- title: Building High-Availability Clusters
+  path: /docs/admin/high-availability/

@@ -1,8 +1,5 @@
 ---
 title: Federated ReplicaSets
-redirect_from:
-- "/docs/user-guide/federation/replicasets/"
-- "/docs/user-guide/federation/replicasets.html"
 ---
 
 {% capture overview %}
@@ -19,7 +16,7 @@ replicas exist across the registered clusters.
 
 * {% include federated-task-tutorial-prereqs.md %}
 * You are also expected to have a basic
-[working knowledge of Kubernetes](/docs/getting-started-guides/) in
+[working knowledge of Kubernetes](/docs/setup/) in
 general and [ReplicaSets](/docs/concepts/workloads/controllers/replicaset/) in particular.
 {% endcapture %}
 
@@ -37,7 +34,7 @@ You can do that using [kubectl](/docs/user-guide/kubectl/) by running:
 kubectl --context=federation-cluster create -f myrs.yaml
 ```
 
-The '--context=federation-cluster' flag tells kubectl to submit the
+The `--context=federation-cluster` flag tells kubectl to submit the
 request to the Federation apiserver instead of sending it to a Kubernetes
 cluster.
 
@@ -59,15 +56,41 @@ federation ReplicaSet.
 
 ### Spreading Replicas in Underlying Clusters
 
-By default, replicas are spread equally in all the underlying clusters. For ex:
+By default, replicas are spread equally in all the underlying clusters. For example:
 if you have 3 registered clusters and you create a federated ReplicaSet with
 `spec.replicas = 9`, then each ReplicaSet in the 3 clusters will have
 `spec.replicas=3`.
-To modify the number of replicas in each cluster, you can specify
-[FederatedReplicaSetPreference](https://github.com/kubernetes/kubernetes/blob/{{page.githubbranch}}/federation/apis/federation/types.go)
-as an annotation with key `federation.kubernetes.io/replica-set-preferences`
-on the federated ReplicaSet.
+To modify the number of replicas in each cluster, you can add an annotation with
+key `federation.kubernetes.io/replica-set-preferences` to the federated ReplicaSet.
+The value of the annoation is a serialized JSON that contains fields shown in
+the following example:
 
+```
+{
+  "rebalance": true,
+  "clusters": {
+    "foo": {
+      "minReplicas": 10,
+      "maxReplicas": 50,
+      "weight": 100
+    },
+    "bar": {
+      "minReplicas": 10,
+      "maxReplicas": 100,
+      "weight": 200
+    }
+  }
+}
+```
+
+The `rebalance` boolean field specifies whether replicas already scheduled and running
+may be moved in order to match current state to the specified preferences.
+The `clusters` object field contains a map where users can specify the constraints
+for replica placement across the clusters (`foo` and `bar` in the example).
+For each cluster, you can specify the minimum number of replicas that should be
+assigned to it (default is zero), the maximum number of replicas the cluster can
+accept (default is unbounded) and a number expressing the relative weight of
+preferences to place additional replicas to that cluster.
 
 ## Updating a Federated ReplicaSet
 

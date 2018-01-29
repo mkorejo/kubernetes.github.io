@@ -7,7 +7,7 @@ title: Building High-Availability Clusters
 This document describes how to build a high-availability (HA) Kubernetes cluster.  This is a fairly advanced topic.
 Users who merely want to experiment with Kubernetes are encouraged to use configurations that are simpler to set up such
 as [Minikube](/docs/getting-started-guides/minikube/)
-or try [Google Container Engine](https://cloud.google.com/container-engine/) for hosted Kubernetes.
+or try [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine/) for hosted Kubernetes.
 
 Also, at this time high availability support for Kubernetes is not continuously tested in our end-to-end (e2e) testing.  We will
 be working to add this continuous testing, but for now the single-node master installations are more heavily tested.
@@ -17,7 +17,7 @@ be working to add this continuous testing, but for now the single-node master in
 
 ## Overview
 
-Setting up a truly reliable, highly available distributed system requires a number of steps, it is akin to
+Setting up a truly reliable, highly available distributed system requires a number of steps. It is akin to
 wearing underwear, pants, a belt, suspenders, another pair of underwear, and another pair of pants.  We go into each
 of these steps in detail, but a summary is given here to help guide and orient the user.
 
@@ -54,8 +54,7 @@ choices. For example, on systemd-based systems (e.g. RHEL, CentOS), you can run 
 
 If you are extending from a standard Kubernetes installation, the `kubelet` binary should already be present on your system.  You can run
 `which kubelet` to determine if the binary is in fact installed.  If it is not installed,
-you should install the [kubelet binary](https://storage.googleapis.com/kubernetes-release/release/v0.19.3/bin/linux/amd64/kubelet), the
-[kubelet init file](http://releases.k8s.io/{{page.githubbranch}}/cluster/saltbase/salt/kubelet/initd) and [default-kubelet](/docs/admin/high-availability/default-kubelet)
+you should install the [kubelet binary](https://storage.googleapis.com/kubernetes-release/release/v0.19.3/bin/linux/amd64/kubelet) and [default-kubelet](/docs/admin/high-availability/default-kubelet)
 scripts.
 
 If you are using monit, you should also install the monit daemon (`apt-get install monit`) and the [monit-kubelet](/docs/admin/high-availability/monit-kubelet) and
@@ -99,6 +98,7 @@ for `${NODE_IP}` on each machine.
 #### Validating your cluster
 
 Once you copy this into all three nodes, you should have a clustered etcd set up.  You can validate on master with
+
 ```shell
 kubectl exec < pod_name > etcdctl member list
 ```
@@ -114,8 +114,8 @@ on a different node.
 
 ### Even more reliable storage
 
-Of course, if you are interested in increased data reliability, there are further options which makes the place where etcd
-installs it's data even more reliable than regular disks (belts *and* suspenders, ftw!).
+Of course, if you are interested in increased data reliability, there are further options which make the place where etcd
+installs its data even more reliable than regular disks (belts *and* suspenders, ftw!).
 
 If you use a cloud provider, then they usually provide this
 for you, for example [Persistent Disk](https://cloud.google.com/compute/docs/disks/persistent-disks) on the Google Cloud Platform.  These
@@ -126,7 +126,7 @@ Alternatively, you can run a clustered file system like Gluster or Ceph.  Finall
 
 Regardless of how you choose to implement it, if you chose to use one of these options, you should make sure that your storage is mounted
 to each machine.  If your storage is shared between the three masters in your cluster, you should create a different directory on the storage
-for each node.  Throughout these instructions, we assume that this storage is mounted to your machine in `/var/etcd/data`
+for each node.  Throughout these instructions, we assume that this storage is mounted to your machine in `/var/etcd/data`.
 
 ## Replicated API Servers
 
@@ -164,7 +164,7 @@ in the file.
 At this point, you should have 3 apiservers all working correctly.  If you set up a network load balancer, you should
 be able to access your cluster via that load balancer, and see traffic balancing between the apiserver instances.  Setting
 up a load balancer will depend on the specifics of your platform, for example instructions for the Google Cloud
-Platform can be found [here](https://cloud.google.com/compute/docs/load-balancing/)
+Platform can be found [here](https://cloud.google.com/compute/docs/load-balancing/).
 
 Note, if you are using authentication, you may need to regenerate your certificate to include the IP address of the balancer,
 in addition to the IP addresses of the individual nodes.
@@ -173,6 +173,57 @@ For pods that you deploy into the cluster, the `kubernetes` service/dns name sho
 
 For external users of the API (e.g. the `kubectl` command line interface, continuous build pipelines, or other clients) you will want to configure
 them to talk to the external load balancer's IP address.
+
+### Endpoint reconciler
+
+As mentioned in the previous section, the apiserver is exposed through a
+service called `kubernetes`. The endpoints for this service correspond to
+the apiserver replicas that we just deployed.
+
+Since updating endpoints and services requires the apiserver to be up, there
+is special code in the apiserver to let it update its own endpoints directly.
+This code is called the "reconciler," because it reconciles the list of
+endpoints stored in etcd, and the list of endpoints that are actually up
+and running.
+
+Prior Kubernetes 1.9, the reconciler expects you to provide the
+number of endpoints (i.e., the number of apiserver replicas) through
+a command-line flag (e.g. `--apiserver-count=3`). If more replicas
+are available, the reconciler trims down the list of endpoints.
+As a result, if a node running a replica of the apiserver crashes
+and gets replaced, the list of endpoints is eventually updated.
+However, until the replica gets replaced, its endpoint stays in
+the list. During that time, a fraction of the API requests sent
+to the `kubernetes` service will fail, because they will be sent
+to a down endpoint.
+
+This is why the previous section advises you to deploy a load
+balancer, and access the API through that load balancer. The
+load balancer will directly assess the health of the apiserver
+replicas, and make sure that requests are not sent to crashed
+instances.
+
+If you do not add the `--apiserver-count` flag, the value defaults to 1.
+Your cluster will work correctly, but each apiserver replica will
+continuously try to add itself to the list of endpoints while removing
+the other ones, causing a lot of extraneous updates in kube-proxy
+and other components.
+
+Starting with Kubernetes 1.9, a new reconciler implementation is available.
+It uses a *lease* that is regularly renewed by each apiserver
+replica. When a replica is down, it stops renewing its lease, and
+the other replicas notice that the lease expired and remove it
+from the list of endpoints. You can switch to the new reconciler
+by adding the flag `--endpoint-reconciler-type=lease` when starting
+your apiserver replicas.
+
+If you want to know more, you can check the following resources:
+- [issue kubernetes/kuberenetes#22609](https://github.com/kubernetes/kubernetes/issues/22609),
+  which gives additional context
+- [master/reconcilers/mastercount.go](https://github.com/kubernetes/kubernetes/blob/dd9981d038012c120525c9e6df98b3beb3ef19e1/pkg/master/reconcilers/mastercount.go#L63),
+  the implementation of the master count reconciler
+- [PR kubernetes/kubernetes#51698](https://github.com/kubernetes/kubernetes/pull/51698),
+  which adds support for the lease reconciler
 
 ## Master elected components
 
@@ -194,8 +245,7 @@ touch /var/log/kube-scheduler.log
 touch /var/log/kube-controller-manager.log
 ```
 
-Next, set up the descriptions of the scheduler and controller manager pods on each node.
-by copying [kube-scheduler.yaml](/docs/admin/high-availability/kube-scheduler.yaml) and [kube-controller-manager.yaml](/docs/admin/high-availability/kube-controller-manager.yaml) into the `/etc/kubernetes/manifests/` directory.
+Next, set up the descriptions of the scheduler and controller manager pods on each node by copying [kube-scheduler.yaml](/docs/admin/high-availability/kube-scheduler.yaml) and [kube-controller-manager.yaml](/docs/admin/high-availability/kube-controller-manager.yaml) into the `/etc/kubernetes/manifests/` directory.
 
 ## Conclusion
 

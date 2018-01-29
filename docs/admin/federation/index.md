@@ -1,12 +1,12 @@
 ---
-assignees:
+approvers:
 - madhusudancs
 - mml
 - nikhiljindal
 title: (Deprecated) Using `federation-up` and `deploy.sh`
 ---
 
-## The mechanisms explained in this doc to setup federation are deprecated. [`kubefed`](/docs/tutorials/federation/set-up-cluster-federation-kubefed/) is now the recommended way to deploy federation.
+## The mechanisms explained in this doc to setup federation are deprecated. [`kubefed`](/docs/tasks/federation/set-up-cluster-federation-kubefed/) is now the recommended way to deploy federation.
 
 This guide explains how to set up cluster federation that lets us control multiple Kubernetes clusters.
 
@@ -17,7 +17,7 @@ This guide explains how to set up cluster federation that lets us control multip
 ## Prerequisites
 
 This guide assumes that you have a running Kubernetes cluster.
-If you need to start a new cluster, see the [getting started guides](/docs/getting-started-guides/) for instructions on bringing a cluster up.
+If you need to start a new cluster, see the [getting started guides](/docs/setup/) for instructions on bringing a cluster up.
 
 To use the commands in this guide, you must download a Kubernetes release from the 
 [getting started binary releases](/docs/getting-started-guides/binary_release/) and 
@@ -87,9 +87,9 @@ images or you can build them yourself from HEAD.
 ### Using official release images
 
 As part of every Kubernetes release, official release images are pushed to
-`gcr.io/google_containers`. To use the images in this repository, you can
+`k8s.gcr.io`. To use the images in this repository, you can
 set the container image fields in the following configs to point to the
-images in this repository. `gcr.io/google_containers/hyperkube` image
+images in this repository. `k8s.gcr.io/hyperkube` image
 includes the federation-apiserver and federation-controller-manager
 binaries, so you can point the corresponding configs for those components
 to the hyperkube image.
@@ -129,14 +129,14 @@ $ federation/deploy/deploy.sh deploy_federation
 ```
 
 This spins up the federation control components as pods managed by
-[`Deployments`](http://kubernetes.io/docs/user-guide/deployments/) on your
+[`Deployments`](/docs/concepts/workloads/controllers/deployment/) on your
 existing Kubernetes cluster. It also starts a
-[`type: LoadBalancer`](http://kubernetes.io/docs/user-guide/services/#type-loadbalancer)
-[`Service`](http://kubernetes.io/docs/user-guide/services/) for the
+[`type: LoadBalancer`](/docs/concepts/services-networking/service/#type-loadbalancer)
+[`Service`](/docs/concepts/services-networking/service/) for the
 `federation-apiserver` and a
-[`PVC`](http://kubernetes.io/docs/user-guide/persistent-volumes/) backed
+[`PVC`](/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims/) backed
 by a dynamically provisioned
-[`PV`](http://kubernetes.io/docs/user-guide/persistent-volumes/) for
+[`PV`](/docs/concepts/storage/persistent-volumes/) for
  `etcd`. All these components are created in the `federation` namespace.
 
 You can verify that the pods are available by running the following
@@ -154,7 +154,7 @@ to be able to talk to federation apiserver. You can view this by running
 `kubectl config view`.
 
 Note: Dynamic provisioning for persistent volume currently works only on
-AWS, GKE, and GCE. However, you can edit the created `Deployments` to suit
+AWS, Google Kubernetes Engine, and GCE. However, you can edit the created `Deployments` to suit
 your needs, if required.
 
 ## Registering Kubernetes clusters with federation
@@ -247,7 +247,7 @@ federation, and
 in your federation DNS.
 
 You can find more details about config maps in general at
-[config map](http://kubernetes.io/docs/user-guide/configmap/).
+[config map](/docs/tasks/configure-pod-container/configure-pod-configmap/).
 
 ### Kubernetes 1.4 and earlier: Setting federations flag on kube-dns-rc
 
@@ -315,8 +315,8 @@ official release images or you can build from HEAD.
 
 #### Using official release images
 
-As part of every release, images are pushed to `gcr.io/google_containers`. To use
-these images, set env var `FEDERATION_PUSH_REPO_BASE=gcr.io/google_containers`
+As part of every release, images are pushed to `k8s.gcr.io`. To use
+these images, set env var `FEDERATION_PUSH_REPO_BASE=k8s.gcr.io`
 This will always use the latest image.
 To use the hyperkube image which includes federation-apiserver and
 federation-controller-manager from a specific release, set the
@@ -345,7 +345,7 @@ Once you have the images, you can run these as pods on your existing kubernetes 
 The command to run these pods on an existing GCE cluster will look like:
 
 ```shell
-$ KUBERNETES_PROVIDER=gce FEDERATION_DNS_PROVIDER=google-clouddns FEDERATION_NAME=myfederation DNS_ZONE_NAME=myfederation.example FEDERATION_PUSH_REPO_BASE=gcr.io/google_containers ./federation/cluster/federation-up.sh
+$ KUBERNETES_PROVIDER=gce FEDERATION_DNS_PROVIDER=google-clouddns FEDERATION_NAME=myfederation DNS_ZONE_NAME=myfederation.example FEDERATION_PUSH_REPO_BASE=k8s.gcr.io ./federation/cluster/federation-up.sh
 ```
 
 `KUBERNETES_PROVIDER` is the cloud provider.
@@ -378,11 +378,11 @@ to be able to talk to federation apiserver. You can view this by running
 
 Note: `federation-up.sh` creates the federation-apiserver pod with an etcd
 container that is backed by a persistent volume, so as to persist data. This
-currently works only on AWS, GKE, and GCE.  You can edit
+currently works only on AWS, Google Kubernetes Engine, and GCE.  You can edit
 `federation/manifests/federation-apiserver-deployment.yaml` to suit your needs,
 if required.
 
 
 ## For more information
 
- * [Federation proposal](https://github.com/kubernetes/kubernetes/blob/{{page.githubbranch}}/docs/proposals/federation.md) details use cases that motivated this work.
+ * [Federation proposal](https://git.k8s.io/community/contributors/design-proposals/multicluster/federation.md) details use cases that motivated this work.

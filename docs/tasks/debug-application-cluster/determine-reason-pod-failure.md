@@ -1,5 +1,5 @@
 ---
-title: Determining the Reason for Pod Failure
+title: Determine the Reason for Pod Failure
 ---
 
 {% capture overview %}
@@ -37,7 +37,7 @@ the container starts.
 
 1. Create a Pod based on the YAML configuration file:
 
-        kubectl create -f http://k8s.io/docs/tasks/debug-application-cluster/termination.yaml
+       kubectl create -f https://k8s.io/docs/tasks/debug-application-cluster/termination.yaml
 
     In the YAML file, in the `cmd` and `args` fields, you can see that the
     container sleeps for 10 seconds and then writes "Sleep expired" to
@@ -46,13 +46,13 @@ the container starts.
 
 1. Display information about the Pod:
 
-        kubectl get pod termination-demo
+       kubectl get pod termination-demo
 
     Repeat the preceding command until the Pod is no longer running.
 
 1. Display detailed information about the Pod:
 
-        kubectl get pod --output=yaml
+       kubectl get pod --output=yaml
 
     The output includes the "Sleep expired" message:
 
@@ -72,35 +72,46 @@ the container starts.
 only the termination message:
 
 ```
-{% raw %}    kubectl get pod termination-demo -o go-template="{{range .status.containerStatuses}}{{.lastState.terminated.message}}{{end}}"{% endraw %}
+{% raw %}  kubectl get pod termination-demo -o go-template="{{range .status.containerStatuses}}{{.lastState.terminated.message}}{{end}}"{% endraw %}
 ```
 
-## Setting the termination log file
+## Customizing the termination message
 
-By default Kubernetes retrieves termination messages from
-`/dev/termination-log`. To change this to a different file,
-specify a `terminationMessagePath` field for your Container.
+Kubernetes retrieves termination messages from the termination message file
+specified in the `terminationMessagePath` field of a Container, which as a default
+value of `/dev/termination-log`. By customizing this field, you can tell Kubernetes
+to use a different file. Kubernetes use the contents from the specified file to
+populate the Container's status message on both success and failure.
 
-For example, suppose your Container writes termination messages to
-`/tmp/my-log`, and you want Kubernetes to retrieve those messages.
-Set `terminationMessagePath` as shown here:
+In the following example, the container writes termination messages to
+`/tmp/my-log` for Kubernetes to retrieve:
 
-    apiVersion: v1
-    kind: Pod
-    metadata:
-      name: msg-path-demo
-    spec:
-      containers:
-      - name: msg-path-demo-container
-        image: debian
-        terminationMessagePath: "/tmp/my-log"
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: msg-path-demo
+spec:
+  containers:
+  - name: msg-path-demo-container
+    image: debian
+    terminationMessagePath: "/tmp/my-log"
+```
+
+Moreover, users can set the `terminationMessagePolicy` field of a Container for
+further customization. This field defaults to "`File`" which means the termination
+messages are retrieved only from the termination message file. By setting the
+`terminationMessagePolicy` to "`FallbackToLogsOnError`", you can tell Kubernetes
+to use the last chunk of container log output if the termination message file
+is empty and the container exited with an error. The log output is limited to
+2048 bytes or 80 lines, whichever is smaller.
 
 {% endcapture %}
 
 {% capture whatsnext %}
 
 * See the `terminationMessagePath` field in
-  [Container](/docs/api-reference/v1.6/#container-v1-core).
+  [Container](/docs/api-reference/{{page.version}}/#container-v1-core).
 * Learn about [retrieving logs](/docs/concepts/cluster-administration/logging/).
 * Learn about [Go templates](https://golang.org/pkg/text/template/).
 

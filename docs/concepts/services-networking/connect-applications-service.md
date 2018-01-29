@@ -1,12 +1,9 @@
 ---
-assignees:
+approvers:
 - caesarxuchao
 - lavalamp
 - thockin
 title: Connecting Applications with Services
-redirect_from:
-- "/docs/user-guide/connecting-applications/"
-- "/docs/user-guide/connecting-applications.html"
 ---
 
 * TOC
@@ -29,7 +26,7 @@ We did this in a previous example, but let's do it once again and focus on the n
 {% include code.html language="yaml" file="run-my-nginx.yaml" ghlink="/docs/concepts/services-networking/run-my-nginx.yaml" %}
 
 This makes it accessible from any node in your cluster. Check the nodes the pod is running on:
-user
+
 ```shell
 $ kubectl create -f ./run-my-nginx.yaml
 $ kubectl get pods -l run=my-nginx -o wide
@@ -67,7 +64,7 @@ This is equivalent to `kubectl create -f` the following yaml:
 
 {% include code.html language="yaml" file="nginx-svc.yaml" ghlink="/docs/concepts/services-networking/nginx-svc.yaml" %}
 
-This specification will create a Service which targets TCP port 80 on any Pod with the `run: my-nginx` label, and expose it on an abstracted Service port (`targetPort`: is the port the container accepts traffic on, `port`: is the abstracted Service port, which can be any port other pods use to access the Service). View [service API object](/docs/api-reference/v1.6/#service-v1-core) to see the list of supported fields in service definition.
+This specification will create a Service which targets TCP port 80 on any Pod with the `run: my-nginx` label, and expose it on an abstracted Service port (`targetPort`: is the port the container accepts traffic on, `port`: is the abstracted Service port, which can be any port other pods use to access the Service). View [service API object](/docs/api-reference/{{page.version}}/#service-v1-core) to see the list of supported fields in service definition.
 Check your Service:
 
 ```shell
@@ -83,20 +80,21 @@ $ kubectl describe svc my-nginx
 Name:                my-nginx
 Namespace:           default
 Labels:              run=my-nginx
+Annotations:         <none>
 Selector:            run=my-nginx
 Type:                ClusterIP
 IP:                  10.0.162.149
 Port:                <unset> 80/TCP
 Endpoints:           10.244.2.5:80,10.244.3.4:80
 Session Affinity:    None
-No events.
+Events:              <none>
 
 $ kubectl get ep my-nginx
 NAME       ENDPOINTS                     AGE
 my-nginx   10.244.2.5:80,10.244.3.4:80   1m
 ```
 
-You should now be able to curl the nginx Service on `<CLUSTER-IP>:<PORT>` from any node in your cluster. Note that the Service IP is completely virtual, it never hits the wire, if you're curious about how this works you can read more about the [service proxy](/docs/user-guide/services/#virtual-ips-and-service-proxies).
+You should now be able to curl the nginx Service on `<CLUSTER-IP>:<PORT>` from any node in your cluster. Note that the Service IP is completely virtual, it never hits the wire, if you're curious about how this works you can read more about the [service proxy](/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies).
 
 ## Accessing the Service
 
@@ -104,7 +102,7 @@ Kubernetes supports 2 primary modes of finding a Service - environment variables
 
 ### Environment Variables
 
-When a Pod is run on a Node, the kubelet adds a set of environment variables for each active Service. This introduces an ordering problem. To see why, inspect the environment of your running nginx pods (your pod name will be different):
+When a Pod runs on a Node, the kubelet adds a set of environment variables for each active Service. This introduces an ordering problem. To see why, inspect the environment of your running nginx pods (your pod name will be different):
 
 ```shell
 $ kubectl exec my-nginx-3800858182-jr4a2 -- printenv | grep SERVICE
@@ -119,9 +117,9 @@ Note there's no mention of your Service. This is because you created the replica
 $ kubectl scale deployment my-nginx --replicas=0; kubectl scale deployment my-nginx --replicas=2;
 
 $ kubectl get pods -l run=my-nginx -o wide
-NAME                        READY     STATUS    RESTARTS   AGE       NODE
-my-nginx-3800858182-e9ihh   1/1       Running   0          5s        kubernetes-minion-ljyd
-my-nginx-3800858182-j4rm4   1/1       Running   0          5s        kubernetes-minion-905m
+NAME                        READY     STATUS    RESTARTS   AGE     IP            NODE
+my-nginx-3800858182-e9ihh   1/1       Running   0          5s      10.244.2.7    kubernetes-minion-ljyd
+my-nginx-3800858182-j4rm4   1/1       Running   0          5s      10.244.3.8    kubernetes-minion-905m
 ```
 
 You may notice that the pods have different names, since they are killed and recreated.
@@ -170,9 +168,9 @@ Till now we have only accessed the nginx server from within the cluster. Before 
 
 * Self signed certificates for https (unless you already have an identity certificate)
 * An nginx server configured to use the certificates
-* A [secret](/docs/user-guide/secrets) that makes the certificates accessible to pods
+* A [secret](/docs/concepts/configuration/secret/) that makes the certificates accessible to pods
 
-You can acquire all these from the [nginx https example](https://github.com/kubernetes/kubernetes/tree/{{page.githubbranch}}/examples/https-nginx/), in short:
+You can acquire all these from the [nginx https example](https://github.com/kubernetes/examples/tree/{{page.githubbranch}}/staging/https-nginx/). This requires having go and make tools installed. If you don't want to install those, then follow the  manual steps later. In short:
 
 ```shell
 $ make keys secret KEY=/tmp/nginx.key CERT=/tmp/nginx.crt SECRET=/tmp/secret.json
@@ -181,7 +179,37 @@ secret "nginxsecret" created
 $ kubectl get secrets
 NAME                  TYPE                                  DATA      AGE
 default-token-il9rc   kubernetes.io/service-account-token   1         1d
-nginxsecret           Opaque                                2         1m     
+nginxsecret           Opaque                                2         1m
+```
+Following are the manual steps to follow in case you run into problems running make (on windows for example):
+
+```shell
+#create a public private key pair
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /d/tmp/nginx.key -out /d/tmp/nginx.crt -subj "/CN=nginxsvc/O=nginxsvc"
+#convert the keys to base64 encoding
+cat /d/tmp/nginx.crt | base 64
+cat /d/tmp/nginx.key | base 64
+```
+Use the output from the previous commands to create a yaml file as follows. The base64 encoded value should all be on a single line.
+
+```yaml
+apiVersion: "v1"
+kind: "Secret"
+metadata:
+  name: "nginxsecret"
+  namespace: "default"
+data:
+  nginx.crt: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lKQUp5M3lQK0pzMlpJTUEwR0NTcUdTSWIzRFFFQkJRVUFNQ1l4RVRBUEJnTlYKQkFNVENHNW5hVzU0YzNaak1SRXdEd1lEVlFRS0V3aHVaMmx1ZUhOMll6QWVGdzB4TnpFd01qWXdOekEzTVRKYQpGdzB4T0RFd01qWXdOekEzTVRKYU1DWXhFVEFQQmdOVkJBTVRDRzVuYVc1NGMzWmpNUkV3RHdZRFZRUUtFd2h1CloybHVlSE4yWXpDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBSjFxSU1SOVdWM0IKMlZIQlRMRmtobDRONXljMEJxYUhIQktMSnJMcy8vdzZhU3hRS29GbHlJSU94NGUrMlN5ajBFcndCLzlYTnBwbQppeW1CL3JkRldkOXg5UWhBQUxCZkVaTmNiV3NsTVFVcnhBZW50VWt1dk1vLzgvMHRpbGhjc3paenJEYVJ4NEo5Ci82UVRtVVI3a0ZTWUpOWTVQZkR3cGc3dlVvaDZmZ1Voam92VG42eHNVR0M2QURVODBpNXFlZWhNeVI1N2lmU2YKNHZpaXdIY3hnL3lZR1JBRS9mRTRqakxCdmdONjc2SU90S01rZXV3R0ljNDFhd05tNnNTSzRqYUNGeGpYSnZaZQp2by9kTlEybHhHWCtKT2l3SEhXbXNhdGp4WTRaNVk3R1ZoK0QrWnYvcW1mMFgvbVY0Rmo1NzV3ajFMWVBocWtsCmdhSXZYRyt4U1FVQ0F3RUFBYU5RTUU0d0hRWURWUjBPQkJZRUZPNG9OWkI3YXc1OUlsYkROMzhIYkduYnhFVjcKTUI4R0ExVWRJd1FZTUJhQUZPNG9OWkI3YXc1OUlsYkROMzhIYkduYnhFVjdNQXdHQTFVZEV3UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVGQlFBRGdnRUJBRVhTMW9FU0lFaXdyMDhWcVA0K2NwTHI3TW5FMTducDBvMm14alFvCjRGb0RvRjdRZnZqeE04Tzd2TjB0clcxb2pGSW0vWDE4ZnZaL3k4ZzVaWG40Vm8zc3hKVmRBcStNZC9jTStzUGEKNmJjTkNUekZqeFpUV0UrKzE5NS9zb2dmOUZ3VDVDK3U2Q3B5N0M3MTZvUXRUakViV05VdEt4cXI0Nk1OZWNCMApwRFhWZmdWQTRadkR4NFo3S2RiZDY5eXM3OVFHYmg5ZW1PZ05NZFlsSUswSGt0ejF5WU4vbVpmK3FqTkJqbWZjCkNnMnlwbGQ0Wi8rUUNQZjl3SkoybFIrY2FnT0R4elBWcGxNSEcybzgvTHFDdnh6elZPUDUxeXdLZEtxaUMwSVEKQ0I5T2wwWW5scE9UNEh1b2hSUzBPOStlMm9KdFZsNUIyczRpbDlhZ3RTVXFxUlU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+  nginx.key: "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2RhaURFZlZsZHdkbFIKd1V5eFpJWmVEZWNuTkFhbWh4d1NpeWF5N1AvOE9ta3NVQ3FCWmNpQ0RzZUh2dGtzbzlCSzhBZi9WemFhWm9zcApnZjYzUlZuZmNmVUlRQUN3WHhHVFhHMXJKVEVGSzhRSHA3VkpMcnpLUC9QOUxZcFlYTE0yYzZ3MmtjZUNmZitrCkU1bEVlNUJVbUNUV09UM3c4S1lPNzFLSWVuNEZJWTZMMDUrc2JGQmd1Z0ExUE5JdWFubm9UTWtlZTRuMG4rTDQKb3NCM01ZUDhtQmtRQlAzeE9JNHl3YjREZXUraURyU2pKSHJzQmlIT05Xc0RadXJFaXVJMmdoY1kxeWIyWHI2UAozVFVOcGNSbC9pVG9zQngxcHJHclk4V09HZVdPeGxZZmcvbWIvNnBuOUYvNWxlQlkrZStjSTlTMkQ0YXBKWUdpCkwxeHZzVWtGQWdNQkFBRUNnZ0VBZFhCK0xkbk8ySElOTGo5bWRsb25IUGlHWWVzZ294RGQwci9hQ1Zkank4dlEKTjIwL3FQWkUxek1yall6Ry9kVGhTMmMwc0QxaTBXSjdwR1lGb0xtdXlWTjltY0FXUTM5SjM0VHZaU2FFSWZWNgo5TE1jUHhNTmFsNjRLMFRVbUFQZytGam9QSFlhUUxLOERLOUtnNXNrSE5pOWNzMlY5ckd6VWlVZWtBL0RBUlBTClI3L2ZjUFBacDRuRWVBZmI3WTk1R1llb1p5V21SU3VKdlNyblBESGtUdW1vVlVWdkxMRHRzaG9reUxiTWVtN3oKMmJzVmpwSW1GTHJqbGtmQXlpNHg0WjJrV3YyMFRrdWtsZU1jaVlMbjk4QWxiRi9DSmRLM3QraTRoMTVlR2ZQegpoTnh3bk9QdlVTaDR2Q0o3c2Q5TmtEUGJvS2JneVVHOXBYamZhRGR2UVFLQmdRRFFLM01nUkhkQ1pKNVFqZWFKClFGdXF4cHdnNzhZTjQyL1NwenlUYmtGcVFoQWtyczJxWGx1MDZBRzhrZzIzQkswaHkzaE9zSGgxcXRVK3NHZVAKOWRERHBsUWV0ODZsY2FlR3hoc0V0L1R6cEdtNGFKSm5oNzVVaTVGZk9QTDhPTm1FZ3MxMVRhUldhNzZxelRyMgphRlpjQ2pWV1g0YnRSTHVwSkgrMjZnY0FhUUtCZ1FEQmxVSUUzTnNVOFBBZEYvL25sQVB5VWs1T3lDdWc3dmVyClUycXlrdXFzYnBkSi9hODViT1JhM05IVmpVM25uRGpHVHBWaE9JeXg5TEFrc2RwZEFjVmxvcG9HODhXYk9lMTAKMUdqbnkySmdDK3JVWUZiRGtpUGx1K09IYnRnOXFYcGJMSHBzUVpsMGhucDBYSFNYVm9CMUliQndnMGEyOFVadApCbFBtWmc2d1BRS0JnRHVIUVV2SDZHYTNDVUsxNFdmOFhIcFFnMU16M2VvWTBPQm5iSDRvZUZKZmcraEppSXlnCm9RN3hqWldVR3BIc3AyblRtcHErQWlSNzdyRVhsdlhtOElVU2FsbkNiRGlKY01Pc29RdFBZNS9NczJMRm5LQTQKaENmL0pWb2FtZm1nZEN0ZGtFMXNINE9MR2lJVHdEbTRpb0dWZGIwMllnbzFyb2htNUpLMUI3MkpBb0dBUW01UQpHNDhXOTVhL0w1eSt5dCsyZ3YvUHM2VnBvMjZlTzRNQ3lJazJVem9ZWE9IYnNkODJkaC8xT2sybGdHZlI2K3VuCnc1YytZUXRSTHlhQmd3MUtpbGhFZDBKTWU3cGpUSVpnQWJ0LzVPbnlDak9OVXN2aDJjS2lrQ1Z2dTZsZlBjNkQKckliT2ZIaHhxV0RZK2Q1TGN1YSt2NzJ0RkxhenJsSlBsRzlOZHhrQ2dZRUF5elIzT3UyMDNRVVV6bUlCRkwzZAp4Wm5XZ0JLSEo3TnNxcGFWb2RjL0d5aGVycjFDZzE2MmJaSjJDV2RsZkI0VEdtUjZZdmxTZEFOOFRwUWhFbUtKCnFBLzVzdHdxNWd0WGVLOVJmMWxXK29xNThRNTBxMmk1NVdUTThoSDZhTjlaMTltZ0FGdE5VdGNqQUx2dFYxdEYKWSs4WFJkSHJaRnBIWll2NWkwVW1VbGc9Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K"
+```
+Now create the secrets using the file:
+
+```shell
+$ kubectl create -f nginxsecrets.yaml
+$ kubectl get secrets
+NAME                  TYPE                                  DATA      AGE
+default-token-il9rc   kubernetes.io/service-account-token   1         1d
+nginxsecret           Opaque                                2         1m
 ```
 
 Now modify your nginx replicas to start an https server using the certificate in the secret, and the Service, to expose both ports (80 and 443):
@@ -191,7 +219,7 @@ Now modify your nginx replicas to start an https server using the certificate in
 Noteworthy points about the nginx-secure-app manifest:
 
 - It contains both Deployment and Service specification in the same file.
-- The [nginx server](https://github.com/kubernetes/kubernetes/tree/{{page.githubbranch}}/examples/https-nginx/default.conf) serves http traffic on port 80 and https traffic on 443, and nginx Service exposes both ports.
+- The [nginx server](https://github.com/kubernetes/examples/tree/{{page.githubbranch}}/staging/https-nginx/default.conf) serves http traffic on port 80 and https traffic on 443, and nginx Service exposes both ports.
 - Each container has access to the keys through a volume mounted at /etc/nginx/ssl. This is setup *before* the nginx server is started.
 
 ```shell
@@ -298,7 +326,3 @@ clusters and cloud providers, to provide increased availability,
 better fault tolerance and greater scalability for your services. See
 the [Federated Services User Guide](/docs/concepts/cluster-administration/federation-service-discovery/)
 for further information.
-
-## What's next?
-
-[Learn about more Kubernetes features that will help you run containers reliably in production.](/docs/user-guide/production-pods)

@@ -1,11 +1,8 @@
 ---
-assignees:
+approvers:
 - crassirostris
 - piosz
 title: Logging Using Stackdriver
-redirect_from:
-- "/docs/user-guide/logging/stackdriver/"
-- "/docs/user-guide/logging/stackdriver.html"
 ---
 
 Before reading this page, it's highly recommended to familiarize yourself
@@ -25,9 +22,9 @@ and the instances are managed using a Kubernetes `DaemonSet`. The actual deploym
 
 ### Deploying to a new cluster
 
-#### Google Container Engine
+#### Google Kubernetes Engine
 
-Stackdriver is the default logging solution for clusters deployed on Google Container Engine.
+Stackdriver is the default logging solution for clusters deployed on Google Kubernetes Engine.
 Stackdriver Logging is deployed to a new cluster by default unless you explicitly opt-out.
 
 #### Other platforms
@@ -56,7 +53,7 @@ Stackdriver Logging agents to the running cluster.
     that don't have fluentd pod allocated already. You can ensure that your node is labelled
     properly by running `kubectl describe` as follows:
 
-    ```shell
+    ```
     kubectl describe node $NODE_NAME
     ```
 
@@ -72,7 +69,7 @@ Stackdriver Logging agents to the running cluster.
     Ensure that the output contains the label `beta.kubernetes.io/fluentd-ds-ready=true`. If it
     is not present, you can add it using the `kubectl label` command as follows:
 
-    ```shell
+    ```
     kubectl label node $NODE_NAME beta.kubernetes.io/fluentd-ds-ready=true
     ```
 
@@ -82,7 +79,7 @@ Stackdriver Logging agents to the running cluster.
 
 1. Deploy a `ConfigMap` with the logging agent configuration by running the following command:
 
-    ```shell
+    ```
     kubectl create -f https://k8s.io/docs/tasks/debug-application-cluster/fluentd-gcp-configmap.yaml
     ```
 
@@ -91,7 +88,7 @@ Stackdriver Logging agents to the running cluster.
 
 1. Deploy the logging agent `DaemonSet` by running the following command:
 
-    ```shell
+    ```
     kubectl create -f https://k8s.io/docs/tasks/debug-application-cluster/fluentd-gcp-ds.yaml
     ```
 
@@ -125,7 +122,7 @@ that writes out the value of a counter and the date once per
 second, and runs indefinitely. Let's create this pod in the default namespace.
 
 ```shell
-kubectl create -f http://k8s.io/docs/user-guide/logging/examples/counter-pod.yaml
+kubectl create -f https://k8s.io/docs/tasks/debug-application-cluster/counter-pod.yaml
 ```
 
 You can observe the running pod:
@@ -162,7 +159,7 @@ pod "counter" deleted
 and then recreating it:
 
 ```shell
-$ kubectl create -f http://k8s.io/docs/user-guide/logging/examples/counter-pod.yaml
+$ kubectl create -f https://k8s.io/docs/tasks/debug-application-cluster/counter-pod.yaml
 pod "counter" created
 ```
 
@@ -189,14 +186,14 @@ the messages from a particular pod.
 
 The most important pieces of metadata are the resource type and log name.
 The resource type of a container log is `container`, which is named
-`GKE Containers` in the UI (even if the Kubernetes cluster is not on GKE).
+`GKE Containers` in the UI (even if the Kubernetes cluster is not on Google Kubernetes Engine).
 The log name is the name of the container, so that if you have a pod with
 two containers, named `container_1` and `container_2` in the spec, their logs
 will have log names `container_1` and `container_2` respectively.
 
 System components have resource type `compute`, which is named
 `GCE VM Instance` in the interface. Log names for system components are fixed.
-For a GKE node, every log entry from a system component has one the following
+For a Google Kubernetes Engine node, every log entry from a system component has one of the following
 log names:
 
 * docker
@@ -237,9 +234,9 @@ the Stackdriver [Exporting Logs page](https://cloud.google.com/logging/docs/expo
 
 ## Configuring Stackdriver Logging Agents
 
-Sometimes the default installation of Stackdriver Logging may not suite your needs, for example:
+Sometimes the default installation of Stackdriver Logging may not suit your needs, for example:
 
-* You may want to add more resources because default performance doesn't suite your needs.
+* You may want to add more resources because default performance doesn't suit your needs.
 * You may want to introduce additional parsing to extract more metadata from your log messages,
 like severity or source code reference.
 * You may want to send logs not only to Stackdriver or send it to Stackdriver only partially.
@@ -248,15 +245,19 @@ In this case you need to be able to change the parameters of `DaemonSet` and `Co
 
 ### Prerequisites
 
-If you're on GKE and Stackdriver Logging is enabled in your cluster, you cannot change its
-parameters. Likewise, if you're not on GKE, but Stackdriver Logging is installed as an addon,
-you won't be able to change deployment parameters using Kubernetes API. To make it possible
-to change parameters of Stackdriver Logging agents, you should switch to the API object
-deployment, when Stackdriver Logging is installed into a running cluster that didn't have any
-cluster logging solutions installed before that.
+If you're using GKE and Stackdriver Logging is enabled in your cluster, you
+cannot change its configuration, because it's managed and supported by GKE.
+However, you can disable the default integration and deploy your own. Note,
+that you will have to support and maintain a newly deployed configuration
+yourself: update the image and configuration, adjust the resources and so on.
+To disable the default logging integration, use the following command:
 
-You can find notes on how to install Stackdriver Logging agents into a running cluster in the
-[Deploying section](#deploying).
+```
+gcloud beta container clusters update --logging-service=none CLUSTER
+```
+
+You can find notes on how to then install Stackdriver Logging agents into
+a running cluster in the [Deploying section](#deploying).
 
 ### Changing `DaemonSet` parameters
 
@@ -304,7 +305,7 @@ Get the current version of the Stackdriver Logging `ConfigMap` in your cluster
 by running the following command:
 
 ```shell
-kubectl get ds fluentd-gcp-v2.0 --namespace kube-system -o yaml > fluentd-gcp-ds.yaml
+kubectl get cm fluentd-gcp-config --namespace kube-system -o yaml > fluentd-gcp-configmap.yaml
 ```
 
 Then in the value for the key `containers.input.conf` insert a new filter right after
@@ -321,7 +322,7 @@ Fluentd is written in Ruby and allows to extend its capabilities using
 [plugins](http://www.fluentd.org/plugins). If you want to use a plugin, which is not included
 in the default Stackdriver Logging container image, you have to build a custom image. Imagine
 you want to add Kafka sink for messages from a particular container for additional processing.
-You can re-use the default [container image sources](https://github.com/kubernetes/contrib/tree/master/fluentd/fluentd-gcp-image)
+You can re-use the default [container image sources](https://git.k8s.io/contrib/fluentd/fluentd-gcp-image)
 with minor changes:
 
 * Change Makefile to point to your container repository, e.g. `PREFIX=gcr.io/<your-project-id>`.

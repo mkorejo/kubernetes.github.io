@@ -1,5 +1,5 @@
 ---
-assignees:
+approvers:
 - aveshagarwal
 - eparis
 - thockin
@@ -19,7 +19,7 @@ This is a getting started guide for Fedora.  It is a manual configuration so you
 
 This guide will only get ONE node (previously minion) working.  Multiple nodes require a functional [networking configuration](/docs/concepts/cluster-administration/networking/) done outside of Kubernetes.  Although the additional Kubernetes configuration requirements should be obvious.
 
-The Kubernetes package provides a few services: kube-apiserver, kube-scheduler, kube-controller-manager, kubelet, kube-proxy.  These services are managed by systemd and the configuration resides in a central location: /etc/kubernetes.  We will break the services up between the hosts.  The first host, fed-master, will be the Kubernetes master.  This host will run the kube-apiserver, kube-controller-manager, and kube-scheduler.  In addition, the master will also run _etcd_ (not needed if _etcd_ runs on a different host but this guide assumes that _etcd_ and Kubernetes master run on the same host).  The remaining host, fed-node will be the node and run kubelet, proxy and docker.
+The Kubernetes package provides a few services: kube-apiserver, kube-scheduler, kube-controller-manager, kubelet, kube-proxy.  These services are managed by systemd and the configuration resides in a central location: `/etc/kubernetes`.  We will break the services up between the hosts.  The first host, fed-master, will be the Kubernetes master.  This host will run the kube-apiserver, kube-controller-manager, and kube-scheduler.  In addition, the master will also run _etcd_ (not needed if _etcd_ runs on a different host but this guide assumes that _etcd_ and Kubernetes master run on the same host).  The remaining host, fed-node will be the node and run kubelet, proxy and docker.
 
 **System Information:**
 
@@ -33,7 +33,7 @@ fed-node = 192.168.121.65
 **Prepare the hosts:**
 
 * Install Kubernetes on all hosts - fed-{master,node}.  This will also pull in docker. Also install etcd on fed-master.  This guide has been tested with Kubernetes-0.18 and beyond.
-* Running on AWS EC2 with RHEL 7.2, you need to enable "extras" repository for yum by editing `/etc/yum.repos.d/redhat-rhui.repo` and changing the changing the `enable=0` to `enable=1` for extras.
+* Running on AWS EC2 with RHEL 7.2, you need to enable "extras" repository for yum by editing `/etc/yum.repos.d/redhat-rhui.repo` and changing the `enable=0` to `enable=1` for extras.
 
 ```shell
 dnf -y install kubernetes
@@ -45,14 +45,14 @@ dnf -y install kubernetes
 dnf -y install etcd
 ```
 
-* Add master and node to /etc/hosts on all machines (not needed if hostnames already in DNS). Make sure that communication works between fed-master and fed-node by using a utility such as ping.
+* Add master and node to `/etc/hosts` on all machines (not needed if hostnames already in DNS). Make sure that communication works between fed-master and fed-node by using a utility such as ping.
 
 ```shell
 echo "192.168.121.9    fed-master
 192.168.121.65    fed-node" >> /etc/hosts
 ```
 
-* Edit /etc/kubernetes/config (which should be the same on all hosts) to set
+* Edit `/etc/kubernetes/config` (which should be the same on all hosts) to set
 the name of the master server:
 
 ```shell
@@ -69,7 +69,7 @@ systemctl stop iptables-services firewalld
 
 **Configure the Kubernetes services on the master.**
 
-* Edit /etc/kubernetes/apiserver to appear as such.  The service-cluster-ip-range IP addresses must be an unused block of addresses, not used anywhere else.  They do not need to be routed or assigned to anything.
+* Edit `/etc/kubernetes/apiserver` to appear as such.  The service-cluster-ip-range IP addresses must be an unused block of addresses, not used anywhere else.  They do not need to be routed or assigned to anything.
 
 ```shell
 # The address on the local server to listen to.
@@ -85,7 +85,7 @@ KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
 KUBE_API_ARGS=""
 ```
 
-* Edit /etc/etcd/etcd.conf to let etcd listen on all available IPs instead of 127.0.0.1; If you have not done this, you might see an error such as "connection refused".
+* Edit `/etc/etcd/etcd.conf` to let etcd listen on all available IPs instead of 127.0.0.1. If you have not done this, you might see an error such as "connection refused".
 
 ```shell
 ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:2379"
@@ -101,45 +101,11 @@ for SERVICES in etcd kube-apiserver kube-controller-manager kube-scheduler; do
 done
 ```
 
-* Addition of nodes:
-
-* Create following node.json file on Kubernetes master node:
-
-```json
-{
-    "apiVersion": "v1",
-    "kind": "Node",
-    "metadata": {
-        "name": "fed-node",
-        "labels":{ "name": "fed-node-label"}
-    },
-    "spec": {
-        "externalID": "fed-node"
-    }
-}
-```
-
-Now create a node object internally in your Kubernetes cluster by running:
-
-```shell
-$ kubectl create -f ./node.json
-
-$ kubectl get nodes
-NAME            STATUS        AGE
-fed-node        Unknown       4h
-```
-
-Please note that in the above, it only creates a representation for the node
-_fed-node_ internally. It does not provision the actual _fed-node_. Also, it
-is assumed that _fed-node_ (as specified in `name`) can be resolved and is
-reachable from Kubernetes master node. This guide will discuss how to provision
-a Kubernetes node (fed-node) below.
-
 **Configure the Kubernetes services on the node.**
 
 ***We need to configure the kubelet on the node.***
 
-* Edit /etc/kubernetes/kubelet to appear as such:
+* Edit `/etc/kubernetes/kubelet` to appear as such:
 
 ```shell
 ###
@@ -172,7 +138,7 @@ done
 
 ```shell
 kubectl get nodes
-NAME            STATUS      AGE
+NAME            STATUS      AGE      VERSION
 fed-node        Ready       4h
 ```
 

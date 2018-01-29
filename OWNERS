@@ -1,6 +1,11 @@
-assignees:
-- smarterclayton
-- janetkuo
-- pwittrock
-- kelseyhightower
-- jaredbhatti
+reviewers:
+- tengqm
+- zhangxiaoyu-zidif
+- xiangpengzhao
+approvers:
+- heckj
+- a-mccarthy
+- abiogenesis-now
+- bradamant3
+- steveperry-53
+- zacharysarah

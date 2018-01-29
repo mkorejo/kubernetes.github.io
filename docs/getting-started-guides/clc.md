@@ -12,20 +12,22 @@ You can accomplish all these tasks with a single command. We have made the Ansib
 ## Find Help
 
 If you run into any problems or want help with anything, we are here to help. Reach out to use via any of the following ways:
+
 - Submit a github issue
 - Send an email to Kubernetes AT ctl DOT io
-- Visit http://info.ctl.io/kubernetes
+- Visit [http://info.ctl.io/kubernetes](http://info.ctl.io/kubernetes)
 
 ## Clusters of VMs or Physical Servers, your choice.
 
 - We support Kubernetes clusters on both Virtual Machines or Physical Servers. If you want to use physical servers for the worker nodes (minions), simple use the --minion_type=bareMetal flag.
-- For more information on physical servers, visit: [https://www.ctl.io/bare-metal/](https://www.ctl.io/bare-metal/))
+- For more information on physical servers, visit: [https://www.ctl.io/bare-metal/](https://www.ctl.io/bare-metal/)
 - Physical serves are only available in the VA1 and GB3 data centers.
 - VMs are available in all 13 of our public cloud locations
 
 ## Requirements
 
 The requirements to run this script are:
+
 - A linux administrative host (tested on ubuntu and OSX)
 - python 2 (tested on 2.7.11)
   - pip (installed with python as of 2.7.9)
@@ -44,6 +46,7 @@ git clone https://github.com/CenturyLinkCloud/adm-kubernetes-on-clc
 ```
 
 2) Install all requirements, including
+
   * Ansible
   * CenturyLink Cloud SDK
   * Ansible Modules
@@ -70,30 +73,30 @@ If you use an ubuntu 14, for your convenience we have provided a step by step
 guide to install the requirements and install the script.
 
 ```shell
-  # system
-  apt-get update
-  apt-get install -y git python python-crypto
-  curl -O https://bootstrap.pypa.io/get-pip.py
-  python get-pip.py
+# system
+apt-get update
+apt-get install -y git python python-crypto
+curl -O https://bootstrap.pypa.io/get-pip.py
+python get-pip.py
 
-  # installing this repository
-  mkdir -p ~home/k8s-on-clc
-  cd ~home/k8s-on-clc
-  git clone https://github.com/CenturyLinkCloud/adm-kubernetes-on-clc.git
-  cd adm-kubernetes-on-clc/
-  pip install -r requirements.txt
+# installing this repository
+mkdir -p ~home/k8s-on-clc
+cd ~home/k8s-on-clc
+git clone https://github.com/CenturyLinkCloud/adm-kubernetes-on-clc.git
+cd adm-kubernetes-on-clc/
+pip install -r requirements.txt
 
-  # getting started
-  cd ansible
-  cp credentials.sh.template credentials.sh; vi credentials.sh
-  source credentials.sh
+# getting started
+cd ansible
+cp credentials.sh.template credentials.sh; vi credentials.sh
+source credentials.sh
 ```
 
 
 
 ## Cluster Creation
 
-To create a new Kubernetes cluster, simply run the kube-up.sh script. A complete
+To create a new Kubernetes cluster, simply run the ```kube-up.sh``` script. A complete
 list of script options and some examples are listed below.
 
 ```shell
@@ -143,7 +146,7 @@ between option name and option value.
 ## Cluster Expansion
 
 To expand an existing Kubernetes cluster, run the ```add-kube-node.sh```
-script. A complete list of script options and some examples are listed [[below]](####Cluster Expansion: Script Options).
+script. A complete list of script options and some examples are listed [below](#cluster-expansion-script-options).
 This script must be run from the same host that created the cluster (or a host
 that has the cluster artifact files stored in ```~/.clc_kube/$cluster_name```).
 
@@ -165,7 +168,6 @@ order to access the CenturyLinkCloud API
      -h (--help)                   display this help and exit
      -c= (--clc_cluster_name=)     set the name of the cluster, as used in CLC group names
      -m= (--minion_count=)         number of kubernetes minion nodes to add
-
 ```
 
 ## Cluster Deletion
@@ -176,7 +178,6 @@ There are two ways to delete an existing cluster:
 
 ```shell
 python delete_cluster.py --cluster=clc_cluster_name --datacenter=DC1
-
 ```
 
 2) Use the CenturyLink Cloud UI. To delete a cluster, log into the CenturyLink
@@ -188,19 +189,19 @@ Kubernetes Cluster. We hope to add a scripted option to do this soon.
 Create a cluster with name of k8s_1, 1 master node and 3 worker minions (on physical machines), in VA1
 
 ```shell
- bash kube-up.sh --clc_cluster_name=k8s_1 --minion_type=bareMetal --minion_count=3 --datacenter=VA1
+bash kube-up.sh --clc_cluster_name=k8s_1 --minion_type=bareMetal --minion_count=3 --datacenter=VA1
 ```
 
 Create a cluster with name of k8s_2, an ha etcd cluster on 3 VMs and 6 worker minions (on VMs), in VA1
 
 ```shell
- bash kube-up.sh --clc_cluster_name=k8s_2 --minion_type=standard --minion_count=6 --datacenter=VA1 --etcd_separate_cluster=yes
+bash kube-up.sh --clc_cluster_name=k8s_2 --minion_type=standard --minion_count=6 --datacenter=VA1 --etcd_separate_cluster=yes
 ```
 
 Create a cluster with name of k8s_3, 1 master node, and 10 worker minions (on VMs) with higher mem/cpu, in UC1:
 
 ```shell
-  bash kube-up.sh --clc_cluster_name=k8s_3 --minion_type=standard --minion_count=10 --datacenter=VA1 -mem=6 -cpu=4
+bash kube-up.sh --clc_cluster_name=k8s_3 --minion_type=standard --minion_count=10 --datacenter=VA1 -mem=6 -cpu=4
 ```
 
 
@@ -252,9 +253,9 @@ kubectl cluster-info
 
 ### Accessing the cluster programmatically 
 
-It's possible to use the locally stored client certificates to access the api server. For example, you may want to use any of the [Kubernetes API client libraries](https://github.com/kubernetes/kubernetes/blob/master/docs/devel/client-libraries.md) to program against your Kubernetes cluster in the programming language of your choice. 
+It's possible to use the locally stored client certificates to access the apiserver. For example, you may want to use any of the [Kubernetes API client libraries](/docs/reference/client-libraries/) to program against your Kubernetes cluster in the programming language of your choice. 
 
-To demonstrate how to use these locally stored certificates, we provide the following example of using ```curl``` to communicate to the master api server via https:
+To demonstrate how to use these locally stored certificates, we provide the following example of using ```curl``` to communicate to the master apiserver via https:
 
 ```shell
 curl \
@@ -268,12 +269,10 @@ distributed with OSX.
 
 ### Accessing the cluster with a browser
 
-We install two UIs on Kubernetes. The original KubeUI and [the newer kube
-dashboard](/docs/tasks/web-ui-dashboard/). When you create a cluster, the script should output URLs for these
-interfaces like this:
+We install [the kubernetes dashboard](/docs/tasks/web-ui-dashboard/). When you
+create a cluster, the script should output URLs for these interfaces like this:
 
-KubeUI is running at ```https://${MASTER_IP}:6443/api/v1/namespaces/kube-system/services/kube-ui/proxy```
-kubernetes-dashboard is running at ```https://${MASTER_IP}:6443/api/v1/namespaces/kube-system/services/kubernetes-dashboard/proxy```
+kubernetes-dashboard is running at ```https://${MASTER_IP}:6443/api/v1/namespaces/kube-system/services/kubernetes-dashboard/proxy```.
 
 Note on Authentication to the UIs: The cluster is set up to use basic
 authentication for the user _admin_.   Hitting the url at
@@ -316,7 +315,7 @@ the necessary certificates and serve locally over http.
 kubectl proxy -p 8001
 ```
 
-Then, you can access urls like ```http://127.0.0.1:8001/api/v1/namespaces/kube-system/services/kube-ui/proxy/``` without the need for client certificates in your browser.
+Then, you can access urls like ```http://127.0.0.1:8001/api/v1/namespaces/kube-system/services/kubernetes-dashboard/proxy/``` without the need for client certificates in your browser.
 
 
 ## What Kubernetes features do not work on CenturyLink Cloud

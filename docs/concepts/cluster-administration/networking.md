@@ -1,10 +1,7 @@
 ---
-assignees:
+approvers:
 - thockin
 title: Cluster Networking
-redirect_from:
-- "/docs/admin/networking/"
-- "/docs/admin/networking.html"
 ---
 
 Kubernetes approaches networking somewhat differently than Docker does by
@@ -40,7 +37,7 @@ review the "normal" way that networking works with Docker.  By default, Docker
 uses host-private networking.  It creates a virtual bridge, called `docker0` by
 default, and allocates a subnet from one of the private address blocks defined
 in [RFC1918](https://tools.ietf.org/html/rfc1918) for that bridge.  For each
-container that Docker creates, it allocates a virtual ethernet device (called
+container that Docker creates, it allocates a virtual Ethernet device (called
 `veth`) which is attached to the bridge. The veth is mapped to appear as `eth0`
 in the container, using Linux namespaces.  The in-container `eth0` interface is
 given an IP address from the bridge's address range.
@@ -85,7 +82,7 @@ talk to other VMs in your project.  This is the same basic model.
 Until now this document has talked about containers.  In reality, Kubernetes
 applies IP addresses at the `Pod` scope - containers within a `Pod` share their
 network namespaces - including their IP address.  This means that containers
-within a `Pod` can all reach each other's ports on `localhost`. This does imply 
+within a `Pod` can all reach each other's ports on `localhost`. This does imply
 that containers within a `Pod` must coordinate port usage, but this is no
 different than processes in a VM.  We call this the "IP-per-pod" model.  This
 is implemented in Docker as a "pod container" which holds the network namespace
@@ -106,6 +103,19 @@ as an introduction to various technologies and serves as a jumping-off point.
 The following networking options are sorted alphabetically - the order does not
 imply any preferential status.
 
+### ACI
+
+[Cisco Application Centric Infrastructure](https://www.cisco.com/c/en/us/solutions/data-center-virtualization/application-centric-infrastructure/index.html) offers an integrated overlay and underlay SDN solution that supports containers, virtual machines, and bare metal servers. [ACI](https://www.github.com/noironetworks/aci-containers) provides container networking integration for ACI. An overview of the integration is provided [here](https://www.cisco.com/c/dam/en/us/solutions/collateral/data-center-virtualization/application-centric-infrastructure/solution-overview-c22-739493.pdf).
+ 
+
+### Cilium
+
+[Cilium](https://github.com/cilium/cilium) is open source software for
+providing and transparently securing network connectivity between application
+containers. Cilium is L7/HTTP aware and can enforce network policies on L3-L7
+using an identity based security model that is decoupled from network
+addressing.
+
 ### Contiv
 
 [Contiv](https://github.com/contiv/netplugin) provides configurable networking (native l3 using BGP, overlay using vxlan,  classic l2, or Cisco-SDN/ACI) for various use cases. [Contiv](http://contiv.io) is all open sourced.
@@ -123,7 +133,7 @@ people have reported success with Flannel and Kubernetes.
 ### Google Compute Engine (GCE)
 
 For the Google Compute Engine cluster configuration scripts, we use [advanced
-routing](https://cloud.google.com/compute/docs/networking#routing) to
+routing](https://cloud.google.com/vpc/docs/routes) to
 assign each VM a subnet (default is `/24` - 254 IPs).  Any traffic bound for that
 subnet will be routed directly to the VM by the GCE network fabric.  This is in
 addition to the "main" IP address assigned to the VM, which is NAT'ed for
@@ -163,6 +173,10 @@ sysctl net.ipv4.ip_forward=1
 The result of all this is that all `Pods` can reach each other and can egress
 traffic to the internet.
 
+### Kube-router
+
+[Kube-router](https://github.com/cloudnativelabs/kube-router) is a purpose-built networking solution for Kubernetes that aims to provide high performance and operational simplicity. Kube-router provides a Linux [LVS/IPVS](http://www.linuxvirtualserver.org/software/ipvs.html)-based service proxy, a Linux kernel forwarding-based pod-to-pod networking solution with no overlays, and iptables/ipset-based network policy enforcer.
+
 ### L2 networks and linux bridging
 
 If you have a "dumb" L2 network, such as a simple switch in a "bare-metal"
@@ -174,6 +188,18 @@ perfect the process, please let us know.
 Follow the "With Linux Bridge devices" section of [this very nice
 tutorial](http://blog.oddbit.com/2014/08/11/four-ways-to-connect-a-docker/) from
 Lars Kellogg-Stedman.
+
+### Multus (a Multi Network plugin)
+
+[Multus](https://github.com/Intel-Corp/multus-cni) is a Multi CNI plugin to support the Multi Networking feature in Kubernetes using CRD based network objects in Kubernetes.
+
+Multus supports all [reference plugins](https://github.com/containernetworking/plugins) (eg. [Flannel](https://github.com/containernetworking/plugins/tree/master/plugins/meta/flannel), [DHCP](https://github.com/containernetworking/plugins/tree/master/plugins/ipam/dhcp), [Macvlan](https://github.com/containernetworking/plugins/tree/master/plugins/main/macvlan)) that implement the CNI specification and 3rd party plugins (eg. [Calico](https://github.com/projectcalico/cni-plugin), [Weave](https://github.com/weaveworks/weave), [Cilium](https://github.com/cilium/cilium), [Contiv](https://github.com/contiv/netplugin)). In addition to it, Multus supports [SRIOV](https://github.com/hustcat/sriov-cni), [DPDK](https://github.com/Intel-Corp/sriov-cni), [OVS-DPDK & VPP](https://github.com/intel/vhost-user-net-plugin) workloads in Kubernetes with both cloud native and NFV based applications in Kubernetes.
+
+### NSX-T
+ 
+[VMware NSX-T](https://docs.vmware.com/en/VMware-NSX-T/index.html) is a network virtualization and security platform. NSX-T can provide network virtualization for a multi-cloud and multi-hypervisor environment and is focused on emerging application frameworks and architectures that have heterogeneous endpoints and technology stacks. In addition to vSphere hypervisors, these environments include other hypervisors such as KVM, containers, and bare metal.
+ 
+[NSX-T Container Plug-in (NCP)](https://docs.vmware.com/en/VMware-NSX-T/2.0/nsxt_20_ncp_kubernetes.pdf) provides integration between NSX-T and container orchestrators such as Kubernetes, as well as integration between NSX-T and container-based CaaS/PaaS platforms such as Pivotal Container Service (PKS) and Openshift. 
 
 ### Nuage Networks VCS (Virtualized Cloud Services)
 
@@ -205,18 +231,24 @@ Calico can also be run in policy enforcement mode in conjunction with other netw
 
 ### Romana
 
-[Romana](http://romana.io) is an open source network and security automation solution that lets you deploy Kubernetes without an overlay network. Romana supports Kubernetes [Network Policy](/docs/concepts/services-networking/networkpolicies/) to provide isolation across network namespaces.
+[Romana](http://romana.io) is an open source network and security automation solution that lets you deploy Kubernetes without an overlay network. Romana supports Kubernetes [Network Policy](/docs/concepts/services-networking/network-policies/) to provide isolation across network namespaces.
 
 ### Weave Net from Weaveworks
 
-[Weave Net](https://www.weave.works/products/weave-net/) is a 
-resilient and simple to use network for Kubernetes and its hosted applications.  
-Weave Net runs as a [CNI plug-in](https://www.weave.works/docs/net/latest/cni-plugin/)  
+[Weave Net](https://www.weave.works/products/weave-net/) is a
+resilient and simple to use network for Kubernetes and its hosted applications.
+Weave Net runs as a [CNI plug-in](https://www.weave.works/docs/net/latest/cni-plugin/)
 or stand-alone.  In either version, it doesn't require any configuration or extra code
 to run, and in both cases, the network provides one IP address per pod - as is standard for Kubernetes.
+
+### CNI-Genie from Huawei
+
+[CNI-Genie](https://github.com/Huawei-PaaS/CNI-Genie) is a CNI plugin that enables Kubernetes to [simultanously have access to different implementations](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/multiple-cni-plugins/README.md#what-cni-genie-feature-1-multiple-cni-plugins-enables) of the [Kubernetes network model](https://git.k8s.io/website/docs/concepts/cluster-administration/networking.md#kubernetes-model) in runtime. This includes any implementation that runs as a [CNI plugin](https://github.com/containernetworking/cni#3rd-party-plugins), such as [Flannel](https://github.com/coreos/flannel#flannel), [Calico](http://docs.projectcalico.org/), [Romana](http://romana.io), [Weave-net](https://www.weave.works/products/weave-net/).
+
+CNI-Genie also supports [assigning multiple IP addresses to a pod](https://github.com/Huawei-PaaS/CNI-Genie/blob/master/docs/multiple-ips/README.md#feature-2-extension-cni-genie-multiple-ip-addresses-per-pod), each from a different CNI plugin.
 
 ## Other reading
 
 The early design of the networking model and its rationale, and some future
 plans are described in more detail in the [networking design
-document](https://github.com/kubernetes/kubernetes/blob/{{page.githubbranch}}/docs/design/networking.md).
+document](https://git.k8s.io/community/contributors/design-proposals/network/networking.md).

@@ -48,7 +48,6 @@ Model             Cloud/Region   Status     Machines  Cores  Access  Last connec
 admin/controller  lxd/localhost  available         1      -  admin   just now
 admin/default     lxd/localhost  available         0      -  admin   2017-01-23
 admin/whale*      lxd/localhost  available         6      -  admin   3 minutes ago
-
 ```
 
 The first line ```Controller: k8s``` refers to how you bootstrapped. 
@@ -154,7 +153,7 @@ certificate (with ```myregistry.company.com``` as Common Name) in the
 juju run-action kubernetes-worker/0 registry domain=myregistry.company.com htpasswd="$(base64 -w0 htpasswd)" htpasswd-plain="$(base64 -w0 htpasswd-plain)" tlscert="$(base64 -w0 registry.crt)" tlskey="$(base64 -w0 registry.key)" ingress=true
 ```
 
-If you then decide that you want do delete the registry, just run:
+If you then decide that you want to delete the registry, just run:
 
 ```
 juju run-action kubernetes-worker/0 registry delete=true ingress=true

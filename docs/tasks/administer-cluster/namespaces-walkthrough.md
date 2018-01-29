@@ -1,11 +1,8 @@
 ---
-assignees:
+approvers:
 - derekwaynecarr
 - janetkuo
 title: Namespaces Walkthrough
-redirect_from:
-- "/docs/admin/namespaces/walkthrough/"
-- "/docs/admin/namespaces/walkthrough.html"
 ---
 
 Kubernetes _namespaces_ help different projects, teams, or customers to share a Kubernetes cluster.
@@ -23,7 +20,7 @@ This example demonstrates how to use Kubernetes namespaces to subdivide your clu
 
 This example assumes the following:
 
-1. You have an [existing Kubernetes cluster](/docs/getting-started-guides/).
+1. You have an [existing Kubernetes cluster](/docs/setup/).
 2. You have a basic understanding of Kubernetes _[Pods](/docs/concepts/workloads/pods/pod/)_, _[Services](/docs/concepts/services-networking/service/)_, and _[Deployments](/docs/concepts/workloads/controllers/deployment/)_.
 
 ### Step One: Understand the default namespace
@@ -56,20 +53,24 @@ One pattern this organization could follow is to partition the Kubernetes cluste
 
 Let's create two new namespaces to hold our work.
 
-Use the file [`namespace-dev.json`](/docs/admin/namespaces/namespace-dev.json) which describes a development namespace:
+Use the file [`namespace-dev.json`](/docs/tasks/administer-cluster/namespace-dev.json) which describes a development namespace:
 
 {% include code.html language="json" file="namespace-dev.json" ghlink="/docs/tasks/administer-cluster/namespace-dev.json" %}
 
 Create the development namespace using kubectl.
 
 ```shell
-$ kubectl create -f docs/admin/namespaces/namespace-dev.json
+$ kubectl create -f https://k8s.io/docs/tasks/administer-cluster/namespace-dev.json
 ```
+
+Save the following contents into file [`namespace-prod.json`](/docs/tasks/administer-cluster/namespace-prod.json) which describes a production namespace:
+
+{% include code.html language="json" file="namespace-prod.json" ghlink="/docs/tasks/administer-cluster/namespace-prod.json" %}
 
 And then let's create the production namespace using kubectl.
 
 ```shell
-$ kubectl create -f docs/admin/namespaces/namespace-prod.json
+$ kubectl create -f https://k8s.io/docs/tasks/administer-cluster/namespace-prod.json
 ```
 
 To be sure things are right, let's list all of the namespaces in our cluster.
@@ -126,12 +127,57 @@ lithe-cocoa-92103_kubernetes
 The next step is to define a context for the kubectl client to work in each namespace. The value of "cluster" and "user" fields are copied from the current context.
 
 ```shell
-$ kubectl config set-context dev --namespace=development --cluster=lithe-cocoa-92103_kubernetes --user=lithe-cocoa-92103_kubernetes
-$ kubectl config set-context prod --namespace=production --cluster=lithe-cocoa-92103_kubernetes --user=lithe-cocoa-92103_kubernetes
+$ kubectl config set-context dev --namespace=development \
+  --cluster=lithe-cocoa-92103_kubernetes \
+  --user=lithe-cocoa-92103_kubernetes
+$ kubectl config set-context prod --namespace=production \
+  --cluster=lithe-cocoa-92103_kubernetes \
+  --user=lithe-cocoa-92103_kubernetes
 ```
 
-The above commands provided two request contexts you can alternate against depending on what namespace you
-wish to work against.
+By default, the above commands adds two contexts that are saved into file
+`.kube/config`. You can now view the contexts and alternate against the two
+new request contexts depending on which namespace you wish to work against.
+
+To view the new contexts:
+
+```shell
+$ kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: REDACTED
+    server: https://130.211.122.180
+  name: lithe-cocoa-92103_kubernetes
+contexts:
+- context:
+    cluster: lithe-cocoa-92103_kubernetes
+    user: lithe-cocoa-92103_kubernetes
+  name: lithe-cocoa-92103_kubernetes
+- context:
+    cluster: lithe-cocoa-92103_kubernetes
+    namespace: development
+    user: lithe-cocoa-92103_kubernetes
+  name: dev
+- context:
+    cluster: lithe-cocoa-92103_kubernetes
+    namespace: production
+    user: lithe-cocoa-92103_kubernetes
+  name: prod
+current-context: lithe-cocoa-92103_kubernetes
+kind: Config
+preferences: {}
+users:
+- name: lithe-cocoa-92103_kubernetes
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
+    token: 65rZW78y8HbwXXtSXuUw9DbP4FLjHi4b
+- name: lithe-cocoa-92103_kubernetes-basic-auth
+  user:
+    password: h5M0FtUUIflBSdI7
+    username: admin
+```
 
 Let's switch to operate in the development namespace.
 
@@ -153,9 +199,9 @@ Let's create some contents.
 ```shell
 $ kubectl run snowflake --image=kubernetes/serve_hostname --replicas=2
 ```
-We have just created a deployment whose replica size is 2 that is running the pod called snowflake with a basic container that just serves the hostname. 
+We have just created a deployment whose replica size is 2 that is running the pod called snowflake with a basic container that just serves the hostname.
 Note that `kubectl run` creates deployments only on Kubernetes cluster >= v1.2. If you are running older versions, it creates replication controllers instead.
-If you want to obtain the old behavior, use `--generator=run/v1` to create replication controllers. See [`kubectl run`](/docs/user-guide/kubectl/v1.6/#run) for more details. 
+If you want to obtain the old behavior, use `--generator=run/v1` to create replication controllers. See [`kubectl run`](/docs/user-guide/kubectl/{{page.version}}/#run) for more details.
 
 ```shell
 $ kubectl get deployment

@@ -1,30 +1,37 @@
 ---
-title: Creating an External Load Balancer
-redirect_from:
-- "/docs/user-guide/load-balancer/"
-- "/docs/user-guide/load-balancer.html"
+title: Create an External Load Balancer
 ---
 
-* TOC
-{:toc}
 
-## Overview
+{% capture overview %}
+
+This page shows how to create an External Load Balancer.
 
 When creating a service, you have the option of automatically creating a
-cloud network load balancer. This provides an
-externally-accessible IP address that sends traffic to the correct port on your
-cluster nodes _provided your cluster runs in a supported environment and is configured with the correct cloud load balancer provider package_.
+cloud network load balancer. This provides an externally-accessible IP address
+that sends traffic to the correct port on your cluster nodes
+_provided your cluster runs in a supported environment and is configured with
+the correct cloud load balancer provider package_.
 
-## External Load Balancer Providers
+For information on provisioning and using an Ingress resource that can give
+services externally-reachable URLs, load balance the traffic, terminate SSL etc.,
+please check the [Ingress](/docs/concepts/services-networking/ingress/)
+documentation.
 
-It is important to note that the datapath for this functionality is provided by a load balancer external to the Kubernetes cluster.
+{% endcapture %}
 
-When the service type is set to `LoadBalancer`, Kubernetes provides functionality equivalent to type=`ClusterIP` to pods within the cluster and extends it by programming the (external to Kubernetes) load balancer with entries for the Kubernetes VMs. The Kubernetes service controller automates the creation of the external load balancer, health checks (if needed), firewall rules (if needed) and retrieves the external IP allocated by the cloud provider and populates it in the service object.
+{% capture prerequisites %}
+
+* {% include task-tutorial-prereqs.md %}
+
+{% endcapture %}
+
+{% capture steps %}
 
 ## Configuration file
 
 To create an external load balancer, add the following line to your
-[service configuration file](/docs/user-guide/services/operations/#service-configuration-file):
+[service configuration file](/docs/concepts/services-networking/service/#type-loadbalancer):
 
 ```json
     "type": "LoadBalancer"
@@ -58,16 +65,16 @@ You can alternatively create the service with the `kubectl expose` command and
 its `--type=LoadBalancer` flag:
 
 ```bash
-    $ kubectl expose rc example --port=8765 --target-port=9376 \
+kubectl expose rc example --port=8765 --target-port=9376 \
         --name=example-service --type=LoadBalancer
 ```
 
 This command creates a new service using the same selectors as the referenced
 resource (in the case of the example above, a replication controller named
-`example`.)
+`example`).
 
 For more information, including optional flags, refer to the
-[`kubectl expose` reference](/docs/user-guide/kubectl/v1.6/#expose).
+[`kubectl expose` reference](/docs/user-guide/kubectl/{{page.version}}/#expose).
 
 ## Finding your IP address
 
@@ -75,40 +82,59 @@ You can find the IP address created for your service by getting the service
 information through `kubectl`:
 
 ```bash
-    $ kubectl describe services example-service
-    Name:  example-service
-    Selector:   app=example
-    Type:     LoadBalancer
-    IP:     10.67.252.103
-    LoadBalancer Ingress: 123.45.678.9
-    Port:     <unnamed> 80/TCP
-    NodePort:   <unnamed> 32445/TCP
-    Endpoints:    10.64.0.4:80,10.64.1.5:80,10.64.2.4:80
-    Session Affinity: None
-    No events.
+kubectl describe services example-service
+```
+
+which should produce output like this:
+
+```bash
+    Name:                   example-service
+    Namespace:              default
+    Labels:                 <none>
+    Annotations:            <none>
+    Selector:               app=example
+    Type:                   LoadBalancer
+    IP:                     10.67.252.103
+    LoadBalancer Ingress:   123.45.678.9
+    Port:                   <unnamed> 80/TCP
+    NodePort:               <unnamed> 32445/TCP
+    Endpoints:              10.64.0.4:80,10.64.1.5:80,10.64.2.4:80
+    Session Affinity:       None
+    Events:                 <none>
 ```
 
 The IP address is listed next to `LoadBalancer Ingress`.
 
-## Loss of client source IP for external traffic
+## Preserving the client source IP
 
-Due to the implementation of this feature, the source IP for sessions as seen in the target container will *not be the original source IP* of the client. This is the default behavior as of Kubernetes v1.5. However, starting in v1.5, an optional beta feature has been added
-that will preserve the client Source IP for GCE/GKE environments. This feature will be phased in for other cloud providers in subsequent releases.
+Due to the implementation of this feature, the source IP seen in the target
+container will *not be the original source IP* of the client. To enable
+preservation of the client IP, the following fields can be configured in the
+service spec (supported in GCE/Google Kubernetes Engine environments):
 
-## Annotation to modify the LoadBalancer behavior for preservation of Source IP
-In 1.5, a Beta feature has been added that changes the behavior of the external LoadBalancer feature.
+* `service.spec.externalTrafficPolicy` - denotes if this Service desires to route
+external traffic to node-local or cluster-wide endpoints. There are two available
+options: "Cluster" (default) and "Local". "Cluster" obscures the client source
+IP and may cause a second hop to another node, but should have good overall
+load-spreading. "Local" preserves the client source IP and avoids a second hop
+for LoadBalancer and NodePort type services, but risks potentially imbalanced
+traffic spreading.
+* `service.spec.healthCheckNodePort` - specifies the healthcheck nodePort
+(numeric port number) for the service. If not specified, healthCheckNodePort is
+created by the service API backend with the allocated nodePort. It will use the
+user-specified nodePort value if specified by the client. It only has an
+effect when type is set to "LoadBalancer" and externalTrafficPolicy is set
+to "Local".
 
-This feature can be activated by adding the beta annotation below to the metadata section of the Service Configuration file.
+This feature can be activated by setting `externalTrafficPolicy` to "Local" in the
+Service Configuration file.
 
 ```json
     {
       "kind": "Service",
       "apiVersion": "v1",
       "metadata": {
-        "name": "example-service",
-        "annotations": {
-            "service.beta.kubernetes.io/external-traffic": "OnlyLocal"
-        }
+        "name": "example-service"
       },
       "spec": {
         "ports": [{
@@ -118,14 +144,51 @@ This feature can be activated by adding the beta annotation below to the metadat
         "selector": {
           "app": "example"
         },
-        "type": "LoadBalancer"
+        "type": "LoadBalancer",
+        "externalTrafficPolicy": "Local"
       }
     }
 ```
 
+### Feature availability
+
+| k8s version | Feature support |
+| :---------: |:-----------:|
+| 1.7+ | Supports the full API fields |
+| 1.5 - 1.6 | Supports Beta Annotations |
+| <1.5 | Unsupported |
+
+Below you could find the deprecated Beta annotations used to enable this feature
+prior to its stable version. Newer Kubernetes versions may stop supporting these
+after v1.7. Please update existing applications to use the fields directly.
+
+* `service.beta.kubernetes.io/external-traffic` annotation <-> `service.spec.externalTrafficPolicy` field
+* `service.beta.kubernetes.io/healthcheck-nodeport` annotation <-> `service.spec.healthCheckNodePort` field
+
+`service.beta.kubernetes.io/external-traffic` annotation has a different set of values
+compared to the `service.spec.externalTrafficPolicy` field. The values match as follows:
+
+* "OnlyLocal" for annotation <-> "Local" for field
+* "Global" for annotation <-> "Cluster" for field
+
 **Note that this feature is not currently implemented for all cloudproviders/environments.**
 
-### Caveats and Limitations when preserving source IPs
+Known issues:
+
+* AWS: [kubernetes/kubernetes#35758](https://github.com/kubernetes/kubernetes/issues/35758)
+* Weave-Net: [weaveworks/weave/#2924](https://github.com/weaveworks/weave/issues/2924)
+
+{% endcapture %}
+
+{% capture discussion %}
+
+## External Load Balancer Providers
+
+It is important to note that the datapath for this functionality is provided by a load balancer external to the Kubernetes cluster.
+
+When the service type is set to `LoadBalancer`, Kubernetes provides functionality equivalent to `type=<ClusterIP>` to pods within the cluster and extends it by programming the (external to Kubernetes) load balancer with entries for the Kubernetes pods. The Kubernetes service controller automates the creation of the external load balancer, health checks (if needed), firewall rules (if needed) and retrieves the external IP allocated by the cloud provider and populates it in the service object.
+
+## Caveats and Limitations when preserving source IPs
 
 GCE/AWS load balancers do not provide weights for their target pools. This was not an issue with the old LB
 kube-proxy rules which would correctly balance across all endpoints.
@@ -142,3 +205,7 @@ Once the external load balancers provide weights, this functionality can be adde
 *Future Work: No support for weights is provided for the 1.4 release, but may be added at a future date*
 
 Internal pod to pod traffic should behave similar to ClusterIP services, with equal probability across all pods.
+
+{% endcapture %}
+
+{% include templates/task.md %}

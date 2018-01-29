@@ -1,10 +1,8 @@
 ---
-assignees:
+approvers:
 - brendandburns
 - davidopp
 title: Troubleshooting
-redirect_from:
-- "/docs/troubleshooting/"
 ---
 
 Sometimes things go wrong. This guide is aimed at making them right. It has
@@ -33,16 +31,10 @@ development scenarios. The [Reference](/docs/reference/) section provides
 detailed documentation on the [Kubernetes API](/docs/api-reference/{{page.version}}/)
 and command-line interfaces (CLIs), such as [`kubectl`](/docs/user-guide/kubectl-overview/).
 
-We also have a number of FAQ pages:
-
-   * [User FAQ](https://github.com/kubernetes/kubernetes/wiki/User-FAQ)
-   * [Debugging FAQ](https://github.com/kubernetes/kubernetes/wiki/Debugging-FAQ)
-   * [Services FAQ](https://github.com/kubernetes/kubernetes/wiki/Services-FAQ)
-
 You may also find the Stack Overflow topics relevant:
 
    * [Kubernetes](http://stackoverflow.com/questions/tagged/kubernetes)
-   * [Google Container Engine - GKE](http://stackoverflow.com/questions/tagged/google-container-engine)
+   * [Google Kubernetes Engine](http://stackoverflow.com/questions/tagged/google-container-engine)
 
 ## Help! My question isn't covered!  I need help now!
 
@@ -75,7 +67,7 @@ these channels for localized support and info:
 
 ### Mailing List
 
-The Kubernetes / Google Container Engine mailing list is [kubernetes-users@googlegroups.com](https://groups.google.com/forum/#!forum/kubernetes-users)
+The Kubernetes / Google Kubernetes Engine mailing list is [kubernetes-users@googlegroups.com](https://groups.google.com/forum/#!forum/kubernetes-users)
 
 ### Bugs and Feature requests
 

@@ -1,5 +1,5 @@
 ---
-title: Configuring Pod Initialization
+title: Configure Pod Initialization
 ---
 
 {% capture overview %}
@@ -16,7 +16,7 @@ application Container runs.
 
 {% capture steps %}
 
-## Creating a Pod that has an Init Container
+## Create a Pod that has an Init Container
 
 In this exercise you create a Pod that has one application Container and one
 Init Container. The init container runs to completion before the application
@@ -34,14 +34,14 @@ shared Volume at `/work-dir`, and the application container mounts the shared
 Volume at `/usr/share/nginx/html`. The init container runs the following command
 and then terminates:
 
-     wget -O /work-dir/index.html http://kubernetes.io
+    wget -O /work-dir/index.html http://kubernetes.io
 
 Notice that the init container writes the `index.html` file in the root directory
 of the nginx server.
 
 Create the Pod:
 
-    kubectl create -f http://k8s.io/docs/tasks/configure-pod-container/init-containers.yaml
+    kubectl create -f https://k8s.io/docs/tasks/configure-pod-container/init-containers.yaml
 
 Verify that the nginx container is running:
 
@@ -49,8 +49,8 @@ Verify that the nginx container is running:
 
 The output shows that the nginx container is running:
 
-    NAME      READY     STATUS    RESTARTS   AGE
-    nginx     1/1       Running   0          43m
+    NAME        READY     STATUS    RESTARTS   AGE
+    init-demo   1/1       Running   0          1m
 
 Get a shell into the nginx container running in the init-demo Pod:
 
@@ -81,9 +81,10 @@ The output shows that nginx is serving the web page that was written by the init
 {% capture whatsnext %}
 
 * Learn more about
-[communicating between Containers running in the same Pod](/docs/tasks/configure-pod-container/communicate-containers-same-pod/).
+[communicating between Containers running in the same Pod](/docs/tasks/access-application-cluster/communicate-containers-same-pod-shared-volume/).
 * Learn more about [Init Containers](/docs/concepts/workloads/pods/init-containers/).
 * Learn more about [Volumes](/docs/concepts/storage/volumes/).
+* Learn more about [Debugging Init Containers](/docs/tasks/debug-application-cluster/debug-init-containers/)
 
 {% endcapture %}
 

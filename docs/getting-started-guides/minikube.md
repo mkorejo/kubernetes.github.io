@@ -1,5 +1,5 @@
 ---
-assignees:
+approvers:
 - dlorenc
 - r2d4
 - aaron-prindle
@@ -18,26 +18,13 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
   * NodePorts
   * ConfigMaps and Secrets
   * Dashboards
-  * Container Runtime: Docker, and [rkt](https://github.com/coreos/rkt)
+  * Container Runtime: Docker, [rkt](https://github.com/rkt/rkt) and [CRI-O](https://github.com/kubernetes-incubator/cri-o)
   * Enabling CNI (Container Network Interface)
   * Ingress
 
 ## Installation
 
-### Requirements
-
-* OS X
-    * [xhyve driver](https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion) installation
-* Linux
-    * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](http://www.linux-kvm.org/) installation
-* Windows
-    * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [Hyper-V](https://msdn.microsoft.com/en-us/virtualization/hyperv_on_windows/quick_start/walkthrough_install) installation
-* VT-x/AMD-v virtualization must be enabled in BIOS
-* `kubectl` See the [kubectl installation instructions](/docs/getting-started-guides/kubectl/) for more details.
-
-### Instructions
-
-See the installation instructions for the [latest release](https://github.com/kubernetes/minikube/releases).
+See [Installing Minikube](/docs/tasks/tools/install-minikube/).
 
 ## Quickstart
 
@@ -47,8 +34,9 @@ the following drivers:
 
 * virtualbox
 * vmwarefusion
-* kvm ([driver installation](https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#kvm-driver))
-* xhyve ([driver installation](https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#xhyve-driver))
+* kvm ([driver installation](https://git.k8s.io/minikube/docs/drivers.md#kvm-driver))
+* hyperkit ([driver installation](https://git.k8s.io/minikube/docs/drivers.md#hyperkit-driver))
+* xhyve ([driver installation](https://git.k8s.io/minikube/docs/drivers.md#xhyve-driver)) (deprecated)
 
 Note that the IP below is dynamic and can change. It can be retrieved with `minikube ip`.
 
@@ -59,7 +47,7 @@ Running pre-create checks...
 Creating machine...
 Starting local Kubernetes cluster...
 
-$ kubectl run hello-minikube --image=gcr.io/google_containers/echoserver:1.4 --port=8080
+$ kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.4 --port=8080
 deployment "hello-minikube" created
 $ kubectl expose deployment hello-minikube --type=NodePort
 service "hello-minikube" exposed
@@ -81,27 +69,52 @@ client_address=192.168.99.1
 command=GET
 real path=/
 ...
+$ kubectl delete deployment hello-minikube
+deployment "hello-minikube" deleted
 $ minikube stop
 Stopping local Kubernetes cluster...
 Stopping "minikube"...
 ```
 
-### Using rkt container engine
+### Alternative Container Runtimes
 
-To use [rkt](https://github.com/coreos/rkt) as the container runtime run:
+#### CRI-O
+
+To use [CRI-O](https://github.com/kubernetes-incubator/cri-o) as the container runtime, run:
+
+```bash
+$ minikube start \
+    --network-plugin=cni \
+    --container-runtime=cri-o \
+    --bootstrapper=kubeadm
+```
+
+Or you can use the extended version:
+
+```bash
+$ minikube start \
+    --network-plugin=cni \
+    --extra-config=kubelet.container-runtime=remote \
+    --extra-config=kubelet.container-runtime-endpoint=/var/run/crio.sock \
+    --extra-config=image-service-endpoint=/var/run/crio.sock \
+    --bootstrapper=kubeadm
+```
+
+#### rkt container engine
+
+To use [rkt](https://github.com/rkt/rkt) as the container runtime run:
 
 ```shell
 $ minikube start \
     --network-plugin=cni \
-    --container-runtime=rkt \
-    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.5/minikube-v0.0.5.iso
+    --container-runtime=rkt
 ```
 
 This will use an alternative minikube ISO image containing both rkt, and Docker, and enable CNI networking.
 
 ### Driver plugins
 
-See [DRIVERS](https://github.com/kubernetes/minikube/blob/master/DRIVERS.md) for details on supported drivers and how to install
+See [DRIVERS](https://git.k8s.io/minikube/docs/drivers.md) for details on supported drivers and how to install
 plugins, if required.
 
 ### Reusing the Docker daemon
@@ -113,7 +126,8 @@ To be able to work with the docker daemon on your mac/linux host use the `docker
 ```
 eval $(minikube docker-env)
 ```
-you should now be able to use docker on the command line on your host mac/linux machine talking to the docker daemon inside the minikube VM:
+You should now be able to use docker on the command line on your host mac/linux machine talking to the docker daemon inside the minikube VM:
+
 ```
 docker ps
 ```
@@ -142,18 +156,35 @@ Remember to turn off the imagePullPolicy:Always, as otherwise Kubernetes won't u
 
 The `minikube start` command can be used to start your cluster.
 This command creates and configures a virtual machine that runs a single-node Kubernetes cluster.
-This command also configures your [kubectl](http://kubernetes.io/docs/user-guide/kubectl-overview/) installation to communicate with this cluster.
+This command also configures your [kubectl](/docs/user-guide/kubectl-overview/) installation to communicate with this cluster.
 
 If you are behind a web proxy, you will need to pass this information in e.g. via
 
 ```
-https_proxy=<my proxy> minikube start --docker-env HTTP_PROXY=<my proxy> --docker-env HTTPS_PROXY=<my proxy> --docker-env NO_PROXY=192.168.99.0/24
+https_proxy=<my proxy> minikube start --docker-env http_proxy=<my proxy> --docker-env https_proxy=<my proxy> --docker-env no_proxy=192.168.99.0/24
 ```
 
 Unfortunately just setting the environment variables will not work.
 
 Minikube will also create a "minikube" context, and set it to default in kubectl.
 To switch back to this context later, run this command: `kubectl config use-context minikube`.
+
+#### Specifying the Kubernetes version
+
+Minikube supports running multiple different versions of Kubernetes. You can
+access a list of all available versions via
+
+```
+minikube get-k8s-versions
+```
+
+You can specify the specific version of Kubernetes for Minikube to use by
+adding the `--kubernetes-version` string to the `minikube start` command. For
+example, to run version `v1.7.3`, you would run the following:
+
+```
+minikube start --kubernetes-version v1.7.3
+```
 
 ### Configuring Kubernetes
 
@@ -162,10 +193,10 @@ To use this feature, you can use the `--extra-config` flag on the `minikube star
 
 This flag is repeated, so you can pass it several times with several different values to set multiple options.
 
-This flag takes a string of the form `component.key=value`, where `component` is one of the strings from the above list, `key` is a value on the
+This flag takes a string of the form `component.key=value`, where `component` is one of the strings from the below list, `key` is a value on the
 configuration struct and `value` is the value to set.
 
-Valid `key`s can be found by examining the documentation for the Kubernetes `componentconfigs` for each component.
+Valid keys can be found by examining the documentation for the Kubernetes `componentconfigs` for each component.
 Here is the documentation for each supported configuration:
 
 * [kubelet](https://godoc.org/k8s.io/kubernetes/pkg/apis/componentconfig#KubeletConfiguration)
@@ -181,7 +212,7 @@ To change the `MaxPods` setting to 5 on the Kubelet, pass this flag: `--extra-co
 
 This feature also supports nested structs. To change the `LeaderElection.LeaderElect` setting to `true` on the scheduler, pass this flag: `--extra-config=scheduler.LeaderElection.LeaderElect=true`.
 
-To set the `AuthorizationMode` on the `apiserver` to `RBAC`, you can use: `--extra-config=apiserver.AuthorizationMode=RBAC`.
+To set the `AuthorizationMode` on the `apiserver` to `RBAC`, you can use: `--extra-config=apiserver.Authorization.Mode=RBAC`.
 
 ### Stopping a Cluster
 The `minikube stop` command can be used to stop your cluster.
@@ -196,18 +227,19 @@ This command shuts down and deletes the minikube virtual machine. No data or sta
 
 ### Kubectl
 
-The `minikube start` command creates a "[kubectl context](/docs/user-guide/kubectl/v1.6/#-em-set-context-em-)" called "minikube".
+The `minikube start` command creates a "[kubectl context](/docs/user-guide/kubectl/{{page.version}}/#-em-set-context-em-)" called "minikube".
 This context contains the configuration to communicate with your minikube cluster.
 
 Minikube sets this context to default automatically, but if you need to switch back to it in the future, run:
 
 `kubectl config use-context minikube`,
 
-or pass the context on each command like this: `kubectl get pods --context=minikube`.
+Or pass the context on each command like this: `kubectl get pods --context=minikube`.
 
 ### Dashboard
 
-To access the [Kubernetes Dashboard](http://kubernetes.io/docs/user-guide/ui/), run this command in a shell after starting minikube to get the address:
+To access the [Kubernetes Dashboard](/docs/tasks/access-application-cluster/web-ui-dashboard/), run this command in a shell after starting minikube to get the address:
+
 ```shell
 minikube dashboard
 ```
@@ -215,6 +247,7 @@ minikube dashboard
 ### Services
 
 To access a service exposed via a node port, run this command in a shell after starting minikube to get the address:
+
 ```shell
 minikube service [-n NAMESPACE] [--url] NAME
 ```
@@ -229,7 +262,7 @@ To determine the NodePort for your service, you can use a `kubectl` command like
 `kubectl get service $SERVICE --output='jsonpath="{.spec.ports[0].nodePort}"'`
 
 ## Persistent Volumes
-Minikube supports [PersistentVolumes](http://kubernetes.io/docs/user-guide/persistent-volumes/) of type `hostPath`.
+Minikube supports [PersistentVolumes](/docs/concepts/storage/persistent-volumes/) of type `hostPath`.
 These PersistentVolumes are mapped to a directory inside the minikube VM.
 
 The Minikube VM boots into a tmpfs, so most directories will not be persisted across reboots (`minikube stop`).
@@ -239,7 +272,7 @@ However, Minikube is configured to persist files stored under the following host
 * `/var/lib/localkube`
 * `/var/lib/docker`
 
-Here is an example PersistentVolume config to persist data in the '/data' directory:
+Here is an example PersistentVolume config to persist data in the `/data` directory:
 
 ```yaml
 apiVersion: v1
@@ -256,13 +289,15 @@ spec:
 ```
 
 ## Mounted Host Folders
-Some drivers will mount a host folder within the VM so that you can easily share files between the VM and host.  These are not configurable at the moment and different for the driver and OS you are using.  Note: Host folder sharing is not implemented in the KVM driver yet.
+Some drivers will mount a host folder within the VM so that you can easily share files between the VM and host.  These are not configurable at the moment and different for the driver and OS you are using.
+
+**Note:** Host folder sharing is not implemented in the KVM driver yet.
 
 | Driver | OS | HostFolder | VM |
 | --- | --- | --- | --- |
-| Virtualbox | Linux | /home | /hosthome |
-| Virtualbox | OSX | /Users | /Users |
-| Virtualbox | Windows | C://Users | /c/Users |
+| VirtualBox | Linux | /home | /hosthome |
+| VirtualBox | OSX | /Users | /Users |
+| VirtualBox | Windows | C://Users | /c/Users |
 | VMWare Fusion | OSX | /Users | /Users |
 | Xhyve | OSX | /Users | /Users |
 
@@ -271,11 +306,14 @@ Some drivers will mount a host folder within the VM so that you can easily share
 
 To access a private container registry, follow the steps on [this page](/docs/concepts/containers/images/).
 
-We recommend you use ImagePullSecrets, but if you would like to configure access on the minikube VM you can place the `.dockercfg` in the `/home/docker` directory or the `config.json` in the `/home/docker/.docker` directory.
+We recommend you use `ImagePullSecrets`, but if you would like to configure access on the minikube VM you can place the `.dockercfg` in the `/home/docker` directory or the `config.json` in the `/home/docker/.docker` directory.
 
 ## Add-ons
 
-In order to have minikube properly start/restart custom addons, place the addons you wish to be launched with minikube in the `.minikube/addons` directory.  Addons in this folder will be moved to the minikubeVM and launched each time minikube is started/restarted.
+In order to have minikube properly start or restart custom addons,
+place the addons you wish to be launched with minikube in the `~/.minikube/addons`
+directory. Addons in this folder will be moved to the minikube VM and
+launched each time minikube is started or restarted.
 
 ## Using Minikube with an HTTP Proxy
 
@@ -288,10 +326,16 @@ To do this, pass the required environment variables as flags during `minikube st
 For example:
 
 ```shell
-$ minikube start --docker-env HTTP_PROXY=http://$YOURPROXY:PORT \
-                 --docker-env HTTPS_PROXY=https://$YOURPROXY:PORT
+$ minikube start --docker-env http_proxy=http://$YOURPROXY:PORT \
+                 --docker-env https_proxy=https://$YOURPROXY:PORT
 ```
 
+If your Virtual Machine address is 192.168.99.100, then chances are your proxy settings will prevent kubectl from directly reaching it.
+To by-pass proxy configuration for this IP address, you should modify your no_proxy settings. You can do so with:
+
+```shell
+$ export no_proxy=$no_proxy,$(minikube ip)
+```
 
 ## Known Issues
 * Features that require a Cloud Provider will not work in Minikube. These include:
@@ -301,17 +345,18 @@ $ minikube start --docker-env HTTP_PROXY=http://$YOURPROXY:PORT \
 
 ## Design
 
-Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmachine) for provisioning VMs, and [localkube](https://github.com/kubernetes/minikube/tree/master/pkg/localkube) (originally written and donated to this project by [RedSpread](https://redspread.com/)) for running the cluster.
+Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmachine) for provisioning VMs, and [localkube](https://git.k8s.io/minikube/pkg/localkube) (originally written and donated to this project by [RedSpread](https://redspread.com/)) for running the cluster.
 
-For more information about minikube, see the [proposal](https://github.com/kubernetes/kubernetes/blob/master/docs/proposals/local-cluster-ux.md).
+For more information about minikube, see the [proposal](https://git.k8s.io/community/contributors/design-proposals/cluster-lifecycle/local-cluster-ux.md).
 
 ## Additional Links:
-* **Goals and Non-Goals**: For the goals and non-goals of the minikube project, please see our [roadmap](https://github.com/kubernetes/minikube/blob/master/ROADMAP.md).
-* **Development Guide**: See [CONTRIBUTING.md](https://github.com/kubernetes/minikube/blob/master/CONTRIBUTING.md) for an overview of how to send pull requests.
-* **Building Minikube**: For instructions on how to build/test minikube from source, see the [build guide](https://github.com/kubernetes/minikube/blob/master/BUILD_GUIDE.md)
-* **Adding a New Dependency**: For instructions on how to add a new dependency to minikube see the [adding dependencies guide](https://github.com/kubernetes/minikube/blob/master/ADD_DEPENDENCY.md)
-* **Updating Kubernetes**: For instructions on how to add a new dependency to minikube see the [updating Kubernetes guide](https://github.com/kubernetes/minikube/blob/master/UPDATE_KUBERNETES.md)
+* **Goals and Non-Goals**: For the goals and non-goals of the minikube project, please see our [roadmap](https://git.k8s.io/minikube/docs/contributors/roadmap.md).
+* **Development Guide**: See [CONTRIBUTING.md](https://git.k8s.io/minikube/CONTRIBUTING.md) for an overview of how to send pull requests.
+* **Building Minikube**: For instructions on how to build/test minikube from source, see the [build guide](https://git.k8s.io/minikube/docs/contributors/build_guide.md)
+* **Adding a New Dependency**: For instructions on how to add a new dependency to minikube see the [adding dependencies guide](https://git.k8s.io/minikube/docs/contributors/adding_a_dependency.md)
+* **Adding a New Addon**: For instruction on how to add a new addon for minikube see the [adding an addon guide](https://git.k8s.io/minikube/docs/contributors/adding_an_addon.md)
+* **Updating Kubernetes**: For instructions on how to update kubernetes see the [updating Kubernetes guide](https://git.k8s.io/minikube/docs/contributors/updating_kubernetes.md)
 
 ## Community
 
-Contributions, questions, and comments are all welcomed and encouraged! minkube developers hang out on [Slack](https://kubernetes.slack.com) in the #minikube channel (get an invitation [here](http://slack.kubernetes.io/)). We also have the [kubernetes-dev Google Groups mailing list](https://groups.google.com/forum/#!forum/kubernetes-dev). If you are posting to the list please prefix your subject with "minikube: ".
+Contributions, questions, and comments are all welcomed and encouraged! minikube developers hang out on [Slack](https://kubernetes.slack.com) in the #minikube channel (get an invitation [here](http://slack.kubernetes.io/)). We also have the [kubernetes-dev Google Groups mailing list](https://groups.google.com/forum/#!forum/kubernetes-dev). If you are posting to the list please prefix your subject with "minikube: ".

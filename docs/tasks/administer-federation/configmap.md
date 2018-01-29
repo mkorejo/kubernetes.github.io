@@ -1,8 +1,5 @@
 ---
 title: Federated ConfigMap
-redirect_from:
-- "/docs/user-guide/federation/configmap/"
-- "/docs/user-guide/federation/configmap.html"
 ---
 
 {% capture overview %}
@@ -10,7 +7,7 @@ redirect_from:
 This guide explains how to use ConfigMaps in a Federation control plane.
 
 Federated ConfigMaps are very similar to the traditional [Kubernetes
-ConfigMaps](/docs/tasks/configure-pod-container/configmap/) and provide the same functionality.
+ConfigMaps](/docs/tasks/configure-pod-container/configure-pod-configmap/) and provide the same functionality.
 Creating them in the federation control plane ensures that they are synchronized
 across all the clusters in federation.
 
@@ -21,7 +18,7 @@ across all the clusters in federation.
 * {% include federated-task-tutorial-prereqs.md %}
 * You should also have a basic
 [working knowledge of Kubernetes](/docs/setup/pick-right-solution/) in
-general and [ConfigMaps](/docs/tasks/configure-pod-container/configmap/) in particular.
+general and [ConfigMaps](/docs/tasks/configure-pod-container/configure-pod-configmap/) in particular.
 
 {% endcapture %}
 
@@ -75,7 +72,7 @@ the federation apiserver instead of sending it to a specific Kubernetes cluster.
 For example, you can do that using kubectl by running:
 
 ```shell
-kubectl --context=federation-cluster delete configmap 
+kubectl --context=federation-cluster delete configmap
 ```
 
 Note that at this point, deleting a Federated ConfigMap will not delete the

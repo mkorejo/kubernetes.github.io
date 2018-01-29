@@ -1,11 +1,8 @@
 ---
-assignees:
+approvers:
 - Random-Liu
 - dchen1107
-title: Monitoring Node Health
-redirect_from:
-- "/docs/admin/node-problem/"
-- "/docs/admin/node-problem.html"
+title: Monitor Node Health
 ---
 
 * TOC
@@ -15,8 +12,8 @@ redirect_from:
 
 *Node problem detector* is a [DaemonSet](/docs/concepts/workloads/controllers/daemonset/) monitoring the
 node health. It collects node problems from various daemons and reports them
-to the apiserver as [NodeCondition](/docs/admin/node/#node-condition) and
-[Event](/docs/api-reference/v1.6/#event-v1-core).
+to the apiserver as [NodeCondition](/docs/concepts/architecture/nodes/#condition)
+and [Event](/docs/api-reference/{{page.version}}/#event-v1-core).
 
 It supports some known kernel issue detection now, and will detect more and
 more node problems over time.
@@ -35,7 +32,7 @@ kernel log now. It doesn't support log tools like journald.
 
 * The kernel issue detection of node problem detector has assumption on kernel
 log format, and now it only works on Ubuntu and Debian. However, it is easy to extend
-it to [support other log format](/docs/admin/node-problem/#support-other-log-format).
+it to [support other log format](/docs/tasks/debug-application-cluster/monitor-node-health/#support-other-log-format).
 
 ## Enable/Disable in GCE cluster
 
@@ -80,7 +77,7 @@ spec:
       hostNetwork: true
       containers:
       - name: node-problem-detector
-        image: gcr.io/google_containers/node-problem-detector:v0.1
+        image: k8s.gcr.io/node-problem-detector:v0.1
         securityContext:
           privileged: true
         resources:
@@ -123,7 +120,7 @@ Just create `node-problem-detector.yaml`, and put it under the addon pods direct
 The [default configuration](https://github.com/kubernetes/node-problem-detector/tree/v0.1/config)
 is embedded when building the docker image of node problem detector.
 
-However, you can use [ConfigMap](/docs/tasks/configure-pod-container/configmap/) to overwrite it
+However, you can use [ConfigMap](/docs/tasks/configure-pod-container/configure-pod-configmap/) to overwrite it
 following the steps:
 
 * **Step 1:** Change the config files in `config/`.
@@ -152,7 +149,7 @@ spec:
       hostNetwork: true
       containers:
       - name: node-problem-detector
-        image: gcr.io/google_containers/node-problem-detector:v0.1
+        image: k8s.gcr.io/node-problem-detector:v0.1
         securityContext:
           privileged: true
         resources:
@@ -248,4 +245,4 @@ resource overhead on each node. Usually this is fine, because:
 * The kernel log is generated relatively slowly.
 * Resource limit is set for node problem detector.
 * Even under high load, the resource usage is acceptable.
-(see [benchmark result](https://github.com/kubernetes/node-problem-detector/issues/2#issuecomment-220255629)) 
+(see [benchmark result](https://github.com/kubernetes/node-problem-detector/issues/2#issuecomment-220255629))
